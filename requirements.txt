@@ -1,0 +1,4 @@
+numpy>=2.5
+matplotlib>=3.11
+scikit-learn>=1.9
+pytest>=9.1
