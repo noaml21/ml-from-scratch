@@ -2,6 +2,14 @@
 
 NumPy implementations of core machine learning algorithms, with tests, visual experiments, and comparisons against scikit-learn.
 
+## MLForge V1 planning
+
+The next product is MLForge, a local-first full-screen terminal ML workbench.
+Its authoritative plan starts at [docs/v1/README.md](docs/v1/README.md).
+This planning branch contains specifications only; the `mlforge` application
+has not been implemented yet. The educational algorithms and instructions below
+describe the existing baseline and remain supported.
+
 ## Overview
 
 This project focuses on understanding and implementing the mathematical core of common machine learning algorithms instead of relying on library implementations. The algorithms themselves use NumPy; scikit-learn is used only for reference comparisons and datasets.
