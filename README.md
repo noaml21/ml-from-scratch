@@ -6,6 +6,8 @@ NumPy implementations of core machine learning algorithms, with tests, visual ex
 
 The next product is MLForge, a local-first full-screen terminal ML workbench.
 Its authoritative plan starts at [docs/v1/README.md](docs/v1/README.md).
+Read [How it works](docs/HOW_IT_WORKS.md) for the system flow and
+[Extending MLForge](docs/EXTENDING_MLFORGE.md) for practical change locations.
 This planning branch contains specifications only; the `mlforge` application
 has not been implemented yet. The educational algorithms and instructions below
 describe the existing baseline and remain supported.

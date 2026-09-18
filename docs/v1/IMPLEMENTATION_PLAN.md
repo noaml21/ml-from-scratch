@@ -31,9 +31,9 @@ Execute each phase's numbered units in order; the phase sections below retain th
 ## P02 — Core contracts and export feasibility
 **Depends:** P01.
 **Objective:** remove serialization/installation risk before UI construction.
-**Work:** validated core dataclasses/task enums/error contract; concrete six-model factories; provisional pipeline builder from tiny in-memory fixtures; shared inference runtime contract; fixed wheel template; skops type review. Create parametrized tests for all six fit→serialize→wheel→clean-install→infer paths. This minimal vertical slice uses final exporter structure and is refined later, not disposable duplicate runtime code.
-**Tests:** imports without Textual; six real pipelines roundtrip; compatibility/type/hash failures; consumer doesn't depend on MLForge; number/category/missing normalization; output API per task. No UI yet.
-**Docs:** exact resolved versions/trust allowlist rationale in BUILD_LOG; fill EXPORT_SPEC implementation notes without changing policy.
+**Work:** shared contracts.py records/task enums/errors with dataset records in datasets/records.py; stdlib-AST dependency guard and fixtures per TEST_PLAN; concrete six-model factories; provisional pipeline builder from tiny in-memory fixtures; shared inference runtime contract; fixed wheel template; skops type review. Create parametrized tests for all six fit→serialize→wheel→clean-install→infer paths. This minimal vertical slice uses final exporter structure and is refined later, not disposable duplicate runtime code.
+**Tests:** architecture guard positive/negative fixtures and fresh-process imports without Textual/Rich; six real pipelines roundtrip; compatibility/type/hash failures; consumer doesn't depend on MLForge; number/category/missing normalization; output API per task. No UI yet.
+**Docs:** align HOW_IT_WORKS and EXTENDING_MLFORGE with implemented boundaries; exact resolved versions/trust allowlist rationale in BUILD_LOG; fill EXPORT_SPEC implementation notes without changing policy.
 **Complete when:** all six pipelines can safely ship with exact preprocessing and install independently. Fix compatibility here before next phase.
 **Commit boundaries:** "feat(core): define task and prediction contracts"; "feat(export): prove standalone wheel roundtrips".
 
@@ -49,7 +49,7 @@ Execute each phase's numbered units in order; the phase sections below retain th
 ## P04 — ML preparation, models and evaluation
 **Depends:** P03.
 **Objective:** implement all task semantics without TUI.
-**Work:** target/feature eligibility, warnings/acknowledgements, deterministic shared split, fitted pipelines per candidate, actual limits, k/components controls, metrics/baselines/diagnostics/recommendation, immutable evaluated bundles. Connect P02 runtime/export to real canonical input and metadata.
+**Work:** tasks.py eligibility/feature rules, preprocessing.py shared split and transform construction, training.py candidate fit/evaluation orchestration, warnings/acknowledgements, fitted pipelines per candidate, actual limits, k/components controls, metrics/baselines/diagnostics/recommendation, immutable evaluated bundles. Connect P02 runtime/export to real canonical input and metadata.
 **Tests:** all no-leakage sentinels, eligibility boundaries, deterministic split/model results, hand-checked metrics, unsupervised degeneracy, exact evaluated pipeline export, unknown categories.
 **Docs:** help-content facts from ML_PIPELINE, BUILD_LOG; record decisions in the canonical owner.
 **Complete when:** all four tasks succeed on valid fixtures and fail safely on invalid ones; no preprocessing fitted on holdout.
@@ -58,11 +58,11 @@ Execute each phase's numbered units in order; the phase sections below retain th
 ## P05 — Process orchestration and state machine
 **Depends:** P04.
 **Objective:** bounded background operations, safe cancel and correct session transitions.
-**Work:** worker entrypoint/JSONL protocol, private temporary ownership, coordinator serial candidates/deadlines, integrity-checked outputs, error isolation, event revisions, state invalidation, quit/cleanup. Offload parse/preflight/train/predict/export. No widgets required.
+**Work:** execution/worker.py entrypoint, protocol.py and coordinator.py with responsibilities per ARCHITECTURE; JSONL protocol, private temporary ownership, coordinator serial candidates/deadlines, integrity-checked outputs, error isolation, event revisions, state invalidation, quit/cleanup. Offload parse/preflight/train/predict/export. No widgets required.
 **Tests:** real child cancellation/kill/reap, sentinel survives, complete-vs-cancel races, timeouts/crash/malformed output/stderr flood, partial/all failures, disk errors, stale/duplicate events, no child networking, source unchanged.
-**Docs:** actual lifecycle notes consistent with ARCHITECTURE, BUILD_LOG.
+**Docs:** actual lifecycle notes consistent with ARCHITECTURE; update both practical guides to real code paths, BUILD_LOG.
 **Complete when:** a blocked model cannot trap UI-facing async supervision, no invalid result accepted, normal cancellation leaves no owned live child.
-**Commit boundaries:** "feat(training): isolate operations and enforce lifecycle"; "feat(application): manage immutable run revisions".
+**Commit boundaries:** "feat(execution): isolate operations and enforce lifecycle"; "feat(application): manage immutable run revisions".
 
 ## P06 — TUI shell and dataset journey
 **Depends:** P05.
@@ -105,7 +105,7 @@ Execute each phase's numbered units in order; the phase sections below retain th
 **Objective:** a reviewable V1 release candidate, not a merge/publish.
 **Work:** final verification on release candidate, clean git audit, documentation consistency, write V1_BUILD_REPORT with full architecture/scope/tests/install/export/UX/limitations/review hotspots. Follow non-self-referential SHA protocol in CODEX_EXECUTION.
 **Tests:** final TEST_PLAN commands and both supported CI versions; rerun relevant checks for any fixes, never reuse stale evidence after code changes.
-**Docs:** acceptance matrix evidence, final BUILD_LOG and report, README final verified scope.
+**Docs:** acceptance matrix evidence, final BUILD_LOG and report, README final verified scope; both practical guides match actual files/contracts and no longer describe completed modules as merely planned.
 **Complete when:** code candidate is immutable and verified; final evidence-only commit exists; working tree has no unexplained changes; user receives SHA/branch/report and honest remaining limitations.
 **Commit boundary:** "docs: record verified MLForge V1 release candidate".
 
@@ -128,3 +128,5 @@ Initial onboarding reads every canonical specification. On resume read AGENTS, B
 | P10 | CODEX_EXECUTION final protocol, TEST_PLAN release, ACCEPTANCE_CRITERIA, all affected docs |
 
 Each phase updates BUILD_STATE at the cadence in RESUME_PROTOCOL; BUILD_LOG retains historical evidence. These are part of every phase's documentation gate, even where its Docs line abbreviates this to BUILD_LOG.
+
+In every phase, keep docs/HOW_IT_WORKS.md and docs/EXTENDING_MLFORGE.md aligned if implemented paths/contracts change. Architecture guard starts in P02, runs in the ordinary suite thereafter and is part of P09/P10 release verification; it does not add a product feature.

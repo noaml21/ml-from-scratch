@@ -3,27 +3,66 @@
 ## Package and direction
 Add `src/mlforge/`; do not move the original `src/{kmeans,logistic_regression,pca}.py`. Setuptools src-layout discovery includes only `mlforge*`. Original checkout imports `src.kmeans` remain valid and original demos remain runnable. Distribution provides `mlforge = mlforge.__main__:main` and `python -m mlforge`; noninteractive `--version` and `--help` do not enter full screen.
 
-Suggested cohesive modules (subdivide only with a concrete need):
+Planned cohesive modules (paths below are contracts for implementation, not existing code):
 ```text
 src/mlforge/
-  __main__.py
+  __main__.py        command-line bootstrap; compose application and TUI
+  contracts.py       shared task/error/experiment/result records; no services
   application/       state.py, service.py
   datasets/          records.py, importers.py, inference.py, validation.py, prepare.py
-  preprocessing.py
+  tasks.py           task descriptions, eligibility and feature/target rules
+  preprocessing.py   prepare shared split/policy; build unfitted transforms
   models.py          concrete ModelSpec registry + estimator factories
-  training/          protocol.py, coordinator.py, worker.py
-  evaluation.py
+  training.py        fit and evaluate one candidate; no process management
+  execution/         protocol.py, coordinator.py, worker.py
+  evaluation.py      metric/diagnostic calculations and ranking rules
   prediction/        runtime.py, schema.py
   export/            wheel.py, templates/
   tui/               app.py, screens/, widgets/, theme.tcss, help.py
   examples/          packaged synthetic datasets + provenance
 ```
-No abstract base class for every module, plugin system, database, HTTP server or event bus. A small importer dispatch map and concrete model registry provide real extension seams. Add a new importer at the canonical table boundary; a model at ModelSpec factory/task support; preprocessing at the pipeline builder; an exporter as a callable receiving a validated ModelBundle. New tasks must extend task contracts and tests explicitly.
+`execution` is named for its real responsibility: parse/prepare/train/predict/export child operations, not just training. `training.py` owns candidate fitting. `datasets/prepare.py` generates the Prepare with AI text; it never performs ML preprocessing. `prediction/schema.py` builds and validates export metadata; `datasets/inference.py` infers column types, not model predictions. Keep these meanings in module docstrings. Split files only when a cohesive implementation becomes unwieldy; do not create a generic utils/common/services hierarchy.
 
-Dependency arrows: tui → application → datasets/preprocessing/models/training/evaluation/prediction/export. Training worker invokes core services; core never imports tui. Prediction runtime is independent of application/Textual and is the same source shipped in generated wheels. Keep runtime.py self-contained apart from stdlib and declared inference libraries; schema.py builds/validates authoring metadata but is not a hidden runtime import from MLForge. No object in a core public contract contains a Textual widget.
+No abstract base class for every module, plugin system, database, HTTP server or event bus. A small importer dispatch map and concrete model registry provide real extension seams. Plain functions and typed records suffice. [EXTENDING_MLFORGE](../EXTENDING_MLFORGE.md) gives practical change locations; it cannot authorize new V1 scope. [HOW_IT_WORKS](../HOW_IT_WORKS.md) explains the flow; this document remains the canonical boundary owner.
+
+## Dependency boundaries
+Public direction: TUI → application → execution/core. The child dispatcher invokes core services; core services never call back into the application or presentation. Cross-process messages are data, not Python imports in the reverse direction.
+
+The table lists permitted first-party dependencies across module boundaries. Imports within one listed package must also be acyclic. A new edge requires an explained contract change here and corresponding architecture-test update, not a blanket exception.
+
+| Importing module/package | Permitted other MLForge modules |
+|---|---|
+| datasets.records | None; stdlib value records only |
+| contracts | datasets.records only; otherwise stdlib |
+| datasets (other modules) | contracts, datasets.records and cohesive dataset helpers |
+| tasks | contracts, datasets.records |
+| models | contracts |
+| prediction.runtime | None, including no relative MLForge imports; stdlib and declared inference dependencies only |
+| prediction.schema | contracts, datasets.records, prediction.runtime |
+| preprocessing | contracts, datasets.records, tasks, prediction.runtime |
+| evaluation | contracts |
+| training | contracts, datasets.records, tasks, preprocessing, models, evaluation, prediction |
+| export | contracts, prediction |
+| execution.protocol | contracts |
+| execution.coordinator | contracts, execution.protocol |
+| execution.worker | contracts, execution.protocol, datasets, tasks, preprocessing, models, training, evaluation, prediction, export |
+| application | contracts, datasets.records, datasets.importers (format descriptors), tasks, models, evaluation (ranking), execution.coordinator, execution.protocol |
+| tui | application, contracts, datasets.records; never execution/core service entrypoints |
+| __main__ | application, tui; explicit composition only |
+
+Only `tui/` imports Textual or Rich. Bootstrap imports the TUI lazily after handling --help/--version. No sklearn fitting, raw subprocess management or metrics calculations in widgets/application. Application may inspect lightweight importer/task/model descriptions and call core ranking over accepted metric records; expensive work goes through execution. Importer descriptors perform no file I/O at import time. Model factories import estimators when invoked, not as a package-initializer side effect. Package `__init__.py` files remain minimal: no eager service/UI re-exports, runtime auto-registration or discovery. No runtime import cycle or type-check-only reverse dependency used to evade the direction.
+
+The coordinator knows operation kinds, deadlines, ordered requests and result envelopes, not estimator/importer/metric-specific branches. The worker uses one explicit operation dispatch table and sets thread limits before importing numerical libraries. It does not import the coordinator, application or TUI. Core operations can be called in headless tests without launching a process; worker entrypoint adapts them to files/events. Application owns semantic decisions and accepted state; coordinator owns child lifetime and transport validation.
+
+Use a small stdlib-AST pytest architecture check, specified in TEST_PLAN, starting in P02. Enforce the table, no direct Textual/Rich outside TUI, no first-party import cycles, and the standalone runtime boundary. Keep the guard local to tests: no dependency-injection container, import-linter framework or architecture runtime library. Static checks supplement real headless import and installed-wheel tests; they do not prove absence of every possible dynamic behavior.
+
+Importer format descriptors come from datasets/importers.py, task capabilities from tasks.py, model choices from models.py, and metric/diagnostic keys plus ordering from evaluation.py. Application exposes these as snapshot data; the TUI keeps help prose and rendering only. Do not duplicate supported-extension/model lists or ranking rules in screens. Scalar/table diagnostics use simple data descriptors; a new diagnostic shape may need one explicit renderer, not a generic visualization framework.
 
 ## Core contracts
-Prefer frozen dataclasses/enums and explicit validated JSON serialization for crossing process boundaries.
+Prefer frozen dataclasses/enums and explicit validated JSON serialization for crossing process boundaries. Shared TaskKind, DomainError, ExperimentSpec, PreparedRun, CandidateResult and ModelBundle metadata/handle records live in contracts.py, not application/state.py. Dataset records/schema live in datasets/records.py; ModelSpec lives with models.py; RunEvent and wire codecs live in execution/protocol.py. Contracts contain no widgets, process objects, service locators or callable factories (ModelSpec is a local-only registry record, never serialized).
+
+PreparedRun is a plan with row IDs/policy, not a globally fitted preprocessor. Each candidate owns its fitted transform objects. ModelBundle denotes the fitted pipeline plus metadata; in parent-facing records it is an opaque validated artifact handle with immutable metadata. The actual estimator is created/loaded only in operation children or headless tests. Frozen dataclasses alone do not freeze nested arrays/dicts: copy or expose read-only views and never return a mutable estimator to a screen. CandidateResult is accepted only after process/output validation; a worker success event is provisional.
+
 - TabularDataset / Cell / Column: DATASET_SPEC.
 - Schema: inferred/effective types, overrides, counts, warnings; original values retained separately.
 - ExperimentSpec: schema_version=1, dataset revision/fingerprint, task, target ID or null, ordered feature IDs, model IDs, task options, seed, acknowledgements.
@@ -34,10 +73,10 @@ Prefer frozen dataclasses/enums and explicit validated JSON serialization for cr
 - RunEvent: protocol_version, run_id, revision, sequence, event kind, optional model_id, bounded safe payload.
 - DomainError: stable code, short safe message, action, optional record/column location; never raw stack/data in ordinary UI.
 
-Test pure use without importing Textual. Domain services return results/events, not widget messages. UI converts events to Textual messages on its event loop.
+Test pure use without importing Textual. Domain services return records or report simple progress through a supplied callback, not widget messages or wire events. The worker wraps progress in RunEvent; core functions do not import execution.protocol. The application consumes validated wire events and exposes snapshots/notifications; the UI converts those application notifications to Textual messages on its event loop, without importing the wire protocol.
 
 ## State and invalidation
-Session is in memory: dataset_revision + schema_revision + experiment_revision + run_id. Only application service mutates it. Screens render snapshots and issue commands.
+Session is in memory: dataset_revision + schema_revision + experiment_revision + run_id. Only application/service.py mutates authoritative state held in application/state.py. Screens render snapshots and issue commands. Local focus, scroll position and unsubmitted text belong to screens; committed selections, revisions, accepted results and selected bundle belong to application state. No parallel widget-owned experiment or module-global session.
 
 New dataset invalidates everything downstream. Type override invalidates confirmation, goal eligibility, target, features, preprocessing plan, models and results. Goal change invalidates target and later stages. Target change invalidates features and later stages. Feature/task-option/model changes invalidate current results; mere Back navigation does not. Keep local form choices where still valid but never present old results as current.
 
@@ -46,7 +85,7 @@ Changing configuration after results asks once whether to discard current result
 ## Execution and cancellation
 All expensive parsing, inference, preprocessing, fitting, metrics, prediction and wheel generation run off the Textual event loop. UI async workers supervise operations; CPU work uses an owned subprocess, not a Python thread advertised as cancellable.
 
-Use `asyncio.create_subprocess_exec(sys.executable, "-m", "mlforge.training.worker", ...)`, argument arrays, `shell=False`, and `start_new_session=True` to create an operation-owned process group. One active operation child, sequential candidates; one model child per candidate is preferred for fault isolation. Shared prepared dataset/split are serialized once in a private per-session directory, then read by each candidate child. Operations parse/prepare/train/predict/export may share worker entrypoint and coordinator; no general RPC service.
+Use `asyncio.create_subprocess_exec(sys.executable, "-m", "mlforge.execution.worker", ...)`, argument arrays, `shell=False`, and `start_new_session=True` to create an operation-owned process group. One active operation child, sequential candidates; one model child per candidate is preferred for fault isolation. Shared prepared dataset/split are serialized once in a private per-session directory, then read by each candidate child. Operations parse/prepare/train/predict/export may share worker entrypoint and coordinator; no general RPC service.
 
 Files: canonical JSON for raw cells/spec/events, .skops for fitted standard sklearn pipeline, JSON metadata. Do not use pickle for user-controlled data or arbitrary model paths. Atomic child outputs are accepted only after successful child exit, expected run/model/revision, complete metadata, bounds and integrity checks. Output paths are assigned by parent, never taken unchecked from worker JSON. No partial artifact can become success.
 

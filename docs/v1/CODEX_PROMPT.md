@@ -3,7 +3,7 @@
 The final delivery message supplies the exact verified planning SHA. Substitute it below; a template cannot embed the SHA of the commit containing itself. Never substitute the original first planning commit. If resuming an existing build, preserve its recorded planning base and inspect local work first.
 
 ```text
-Build MLForge V1 in noaml21/ml-from-scratch from planning/mlforge-v1 at <VERIFIED_PLANNING_SHA>, on v1/mlforge. Read AGENTS.md and all canonical specifications in docs/v1/, especially CODEX_EXECUTION.md. Inspect Git before editing; preserve existing partial work and follow RESUME_PROTOCOL.md when continuing.
+Build MLForge V1 in noaml21/ml-from-scratch from planning/mlforge-v1 at <VERIFIED_PLANNING_SHA>, on v1/mlforge. Read AGENTS.md and all canonical specifications in docs/v1/, especially CODEX_EXECUTION.md, plus docs/HOW_IT_WORKS.md and docs/EXTENDING_MLFORGE.md. Inspect Git before editing; preserve existing partial work and follow RESUME_PROTOCOL.md when continuing.
 
 Execute all phases of IMPLEMENTATION_PLAN.md autonomously. Maintain BUILD_STATE.md checkpoints and BUILD_LOG.md history, commit and push small verified increments, test continuously, and keep canonical docs current. Follow UX_FLOW.md and DESIGN_SYSTEM.md. Preserve the educational baseline; do not expand scope or ask for confirmation for ordinary implementation decisions. Stop only for genuine blockers under CODEX_EXECUTION.md.
 

@@ -112,8 +112,8 @@ All listed test modules are planned under TEST_PLAN; no implementation test is c
 | A11 | P04/P07 | pipeline/test_eligibility + test_no_leakage + tui/test_states |
 | A12 | P04 | pipeline/test_no_leakage + test_models |
 | A13 | P02/P04/P07 | pipeline/test_models + test_eligibility + tui/test_states |
-| A14 | P05/P07 | training/test_protocol, test_lifecycle + responsiveness Pilot |
-| A15 | P05/P07 | training/test_lifecycle + real-child ownership assertions |
+| A14 | P05/P07 | execution/test_protocol, test_lifecycle + responsiveness Pilot |
+| A15 | P05/P07 | execution/test_lifecycle + real-child ownership assertions |
 | A16 | P04/P07 | pipeline/test_metrics + tui/test_states |
 | A17 | P07 | four-task test_acceptance and inspection captures |
 | A18 | P08 | prediction/test_runtime + Try Pilot |
@@ -122,10 +122,30 @@ All listed test modules are planned under TEST_PLAN; no implementation test is c
 | A21 | P02/P08 | export/test_security + ZIP/privacy inspection |
 | A22 | P06–P09 | tui/test_navigation, test_resize + PTY |
 | A23 | P05–P09 | state/protocol tests + tui/test_states |
-| A24 | P09/P10 | Full release commands and CI matrix |
-| A25 | Every phase/P10 | Documentation/link/coverage review and report |
+| A24 | P02–P10 | Architecture guard and headless imports; full release commands and CI matrix |
+| A25 | Every phase/P10 | Documentation/link/coverage review, practical guide/code alignment and report |
 | A26 | P10 | Final status/history/report provenance review |
 | A27 | P01/P09 | Documented dirty/stale/unknown-result recovery rehearsal |
 | A28 | P06–P09 | DESIGN_SYSTEM nine-item review, color/monochrome captures, contrast and Pilot |
 
-Final planning verification: `python3 docs/v1/verify_planning.py` passed for 20 Markdown files, local links/fences, 10 phases, 30 units, 28 mapped acceptance IDs and 21 default-palette contrast pairs. Baseline pytest: 15 passed. `git diff --check` passed; production/test/demo/asset/requirements scoped diff empty. These are planning/baseline checks, not completed V1 acceptance.
+Historical verification at 87a7d83: `python3 docs/v1/verify_planning.py` passed for 20 Markdown files, local links/fences, 10 phases, 30 units, 28 mapped acceptance IDs and 21 default-palette contrast pairs. Baseline pytest: 15 passed. `git diff --check` passed; production/test/demo/asset/requirements scoped diff empty. These are planning/baseline checks, not completed V1 acceptance.
+
+## Final pre-implementation architecture review
+Reviewed from clean planning/mlforge-v1 at 87a7d83d660ecb3f0267719667403859ced8b53c. Verdict: CHANGES MADE; no production implementation, user-facing feature or new runtime dependency added.
+
+| Finding | Resolution / owner | Phase / evidence |
+|---|---|---|
+| Shared records lacked a defined home; risk of importing application state from core | ARCHITECTURE assigns contracts.py, dataset records, local ModelSpec and wire records distinct homes | P02; architecture guard and headless import tests |
+| training/ named a generic executor while candidate-fit ownership was implicit | execution/ owns all operation lifecycles; training.py owns fitting; tasks.py owns eligibility | P04/P05; process tests, boundary checks, walkthrough |
+| Direction was aspirational rather than mechanically checked | Explicit allowed dependencies, minimal initializers, standalone runtime and no reverse edges; small AST pytest guard required | P02 onward; A24 |
+| Owner would need to piece together Train/Try/export across specs | HOW_IT_WORKS diagrams and concrete Train walkthrough; one state owner and evaluated-bundle identity clarified | P02/P05/P10 guide alignment; A25 |
+| Extension seams lacked practical change/test maps | EXTENDING_MLFORGE covers models, importers, preprocessing, metrics, exporters, tasks and screens | Per relevant phase; A25 |
+| An arbitrary new task cannot honestly be a one-file extension | Explicit related contract changes; importer and process transport remain independent absent a true contract change | Future authorization only; no new V1 task |
+
+Architecture tradeoffs retained: four explicit task cases instead of a task framework; concrete factories instead of interchangeable backend abstractions; one maintained standalone runtime rather than app-dependent exported packages; private operation files plus JSONL instead of generic RPC; immutable revisions instead of a database/history system. These choices solve actual V1 needs and are explainable without enterprise patterns.
+
+Desk-checked each extension recipe against the dependency table. Lightweight importer/model descriptors and metric ranking are permitted application calls; expensive parsing, preprocessing, fit, diagnostics and prediction stay in children. Coordinator has no estimator-specific branching. Cross-process arrows in the guide explicitly do not imply reversed Python imports. Guides defer exact limits/semantics to canonical specs, and initial onboarding/phase maintenance point to both guides.
+
+Remaining risks are implementation evidence: the planned guard does not exist yet, future code can still violate conceptual responsibility without a forbidden import, and runtime security/cancellation/export parity require real tests. No claim is made that documentation alone proves V2/V3 compatibility. No unresolved planning blocker found after this review.
+
+Architecture-review verification: planning checker passed for 22 Markdown files/local links/fences, 10 phases, 30 units, 28 mapped acceptance IDs and 21 palette pairs. Baseline pytest passed all 15 tests. git diff --check passed; source/tests/demos/assets/requirements are unchanged against both 87a7d83 and the original 93272b baseline. The planned architecture guard will be implemented/tested in P02, not claimed executed here.

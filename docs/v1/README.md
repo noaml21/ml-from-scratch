@@ -25,6 +25,8 @@ Start with REPOSITORY_AUDIT.md for what actually exists. Then read PRODUCT_SPEC.
 | Historical implementation evidence; initially not started | [BUILD_LOG.md](BUILD_LOG.md) |
 | Planning consistency/coverage audit | [PLANNING_REVIEW.md](PLANNING_REVIEW.md) |
 
+Practical guides: [HOW_IT_WORKS](../HOW_IT_WORKS.md) explains control/data flow and ownership; [EXTENDING_MLFORGE](../EXTENDING_MLFORGE.md) maps seven extension types to planned files and tests. Both are guides, not competing normative contracts.
+
 The implementer creates `V1_BUILD_REPORT.md` at release. Do not create a report that implies unperformed verification. README and audit are indexes/evidence; they do not override normative behavior. There are no hidden requirements from the planning chat.
 
 Extra documents beyond the requested set: this index prevents duplicate ownership; the repository audit anchors design in code; PLANNING_REVIEW records cross-document coverage; RESUME_PROTOCOL owns interruption recovery; CODEX_PROMPT provides one reusable start/resume instruction. A separate generic ADR system, project database or research backlog is unnecessary for V1.

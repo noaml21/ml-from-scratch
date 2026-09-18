@@ -4,7 +4,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs/v1"
-files = [ROOT / "AGENTS.md", ROOT / "README.md", *sorted(DOCS.glob("*.md"))]
+files = [ROOT / "AGENTS.md", ROOT / "README.md", *sorted((ROOT / "docs").rglob("*.md"))]
 errors = []
 
 
@@ -24,6 +24,11 @@ for path in files:
         require((path.parent / target).exists(), f"Missing local link: {path.name}: {link}")
 
 index = (DOCS / "README.md").read_text()
+for guide in ("HOW_IT_WORKS.md", "EXTENDING_MLFORGE.md"):
+    require((ROOT / "docs" / guide).exists(), f"Missing practical guide: {guide}")
+    require(f"](../{guide})" in index, f"Missing guide index link: {guide}")
+    require(f"](docs/{guide})" in (ROOT / "AGENTS.md").read_text(), f"Missing agent guide link: {guide}")
+
 required = "PRODUCT_SPEC UX_FLOW DESIGN_SYSTEM ARCHITECTURE DATASET_SPEC ML_PIPELINE EXPORT_SPEC TEST_PLAN IMPLEMENTATION_PLAN ACCEPTANCE_CRITERIA CODEX_EXECUTION RESUME_PROTOCOL BUILD_STATE BUILD_LOG CODEX_PROMPT PLANNING_REVIEW REPOSITORY_AUDIT".split()
 for name in required:
     require((DOCS / f"{name}.md").exists(), f"Missing canonical document: {name}")

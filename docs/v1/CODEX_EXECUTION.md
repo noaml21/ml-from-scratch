@@ -3,7 +3,7 @@
 ## Mission and reading
 Build MLForge V1 in this repository from the complete planning branch. No chat context is required. Work autonomously until every acceptance gate passes, or an actual stop condition below is reached.
 
-On initial onboarding, before production coding read root AGENTS.md, docs/v1/README.md, REPOSITORY_AUDIT.md, every normative specification, IMPLEMENTATION_PLAN.md, TEST_PLAN.md, ACCEPTANCE_CRITERIA.md, BUILD_STATE.md, BUILD_LOG.md and RESUME_PROTOCOL.md. On continuation use RESUME_PROTOCOL's focused reading sequence. Re-read the owning contract before each phase. Inspect actual code and git status; specifications describe planned as well as existing files.
+On initial onboarding, before production coding read root AGENTS.md, docs/v1/README.md, REPOSITORY_AUDIT.md, docs/HOW_IT_WORKS.md, docs/EXTENDING_MLFORGE.md, every normative specification, IMPLEMENTATION_PLAN.md, TEST_PLAN.md, ACCEPTANCE_CRITERIA.md, BUILD_STATE.md, BUILD_LOG.md and RESUME_PROTOCOL.md. On continuation use RESUME_PROTOCOL's focused reading sequence. Re-read the owning contract before each phase. Inspect actual code and git status; specifications describe planned as well as existing files.
 
 ## Authority and conflicts
 1. Explicit current user instructions and applicable higher-priority execution safety rules.
