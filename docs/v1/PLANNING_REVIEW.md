@@ -35,7 +35,7 @@ Planning only. Reviewed 2026-09-18 against the requested product flow and inspec
 | Optional user Try, typed form, predict/transform | UX_FLOW + EXPORT_SPEC API | A18 |
 | Python Package/Saved Model/Full Project candidates | EXPORT_SPEC wheel only; other exporters explicitly deferred | A19 |
 | Self-contained fitted preprocessing, clean installation, versions/security/reproducibility | EXPORT_SPEC | A20/A21 |
-| Full-screen spacing/hierarchy/keys/mouse optional/help/resize/errors | UX_FLOW visual contract and focus rules | A22/A23 |
+| Full-screen spacing/hierarchy/keys/mouse optional/help/resize/errors | DESIGN_SYSTEM visual contract; UX_FLOW focus/navigation rules | A22/A23 |
 | Modular core/importers/models/tasks/export extensibility without framework | ARCHITECTURE boundaries and concrete seams | P02–P05 |
 | Agent onboarding, canonical docs and autonomous single handoff | AGENTS, index, CODEX_EXECUTION | A25 |
 | Phase commits, build log/resume, final build report/review SHA | CODEX_EXECUTION + IMPLEMENTATION_PLAN + BUILD_LOG | A01/A25/A26 |
@@ -76,7 +76,7 @@ Planning only. Reviewed 2026-09-18 against the requested product flow and inspec
 
 No unresolved product choice requires the user to mediate ordinary implementation. Library version resolution and internal decomposition remain evidence-based implementation tasks under explicit contracts.
 
-## Continuation and visual refinement — 2026-09-18
+## Historical continuation refinement — 455553b, 2026-09-18
 - Added RESUME_PROTOCOL as sole owner of checkpoint/recovery mechanics; CODEX_EXECUTION retains overall execution authority and links it.
 - Added CODEX_PROMPT as one start-or-resume entry, based on the complete planning branch, replacing the original first-commit-only prompt.
 - Added one Current checkpoint to BUILD_LOG and 30 ordered unit IDs inside the existing ten phases. Phase gates are unchanged; a completed unit cannot pretend to pass a phase.
@@ -84,3 +84,48 @@ No unresolved product choice requires the user to mediate ordinary implementatio
 - Expanded UX_FLOW with palette roles, clear next actions, humane copy and a nine-item screen review. Added early UX gates, color/monochrome/contrast evidence and acceptance A27/A28 (28 total).
 - No product functionality was added; all changes remain planning/documentation. The original 16-file/26-ID verification above records the first planning commit, not the refined document count.
 - Refinement verification: 18 Markdown files and local links/fences checked; 10 phase contracts, 30 unique work units and 28 acceptance IDs checked; git diff --check passed; original pytest suite rerun, 15 passed. Recovery rehearsal and real TUI visual gates are specified for implementation, not claimed completed now.
+
+## Recovery and final planning review — 2026-09-18
+- Inspected actual branch/status, commits after 046621f, staged/unstaged diffs and untracked inventory before editing. Local 455553b preserved; no partial uncommitted repository work existed. Remote planning still pointed to 046621f at recovery. No reset, stash, discard or history rewrite.
+- BUILD_STATE now solely owns the current resumable snapshot; BUILD_LOG retains historical evidence. RESUME_PROTOCOL alone owns checkpoint mechanics. Initial onboarding reads all specs; continuation reads active-phase owners and cross-cutting invariants, expanding with actual diff scope.
+- DESIGN_SYSTEM now owns visual tokens/components/layout/gates; UX_FLOW retains screens, navigation and focus restoration. The design has an independent mint/charcoal identity and concrete 100x30/80x24/below-minimum rules. These are required implementation checks, not claims of an already built TUI.
+- P01–P10 have relevant reading maps, checkpoint updates, test gates and commit boundaries. No new runtime feature, model, format, exporter or theme selector was added.
+- Fixed one feasibility contradiction: <=200 nested model members would reject a valid 100-tree forest. In-memory sklearn/skops probe returned 502 members. EXPORT_SPEC retains <=200 outer wheel members and a separate <=2,000 nested model cap, with the existing size/trust/structural checks and added boundary tests.
+- Immutable launch SHA is recorded once in BUILD_STATE; later sessions do not silently reset/rebase to a new planning tip. The final chat provides the actual verified delivery SHA; the reusable prompt deliberately uses a placeholder to avoid a self-referential commit.
+- Checked every canonical document against its owner and the coverage below. Historical verification counts remain dated history, not current claims. Implementation phases remain NOT STARTED; release report remains absent.
+
+## Acceptance → implementation → verification traceability
+All listed test modules are planned under TEST_PLAN; no implementation test is claimed to exist yet. P09/P10 repeat release gates and assemble evidence for every ID.
+
+| Acceptance | Owning implementation phases | Verification in TEST_PLAN |
+|---|---|---|
+| A01 | P01/P10 | Git ancestry/status and phase evidence |
+| A02 | P01/P09 | Original 15 tests and three comparisons |
+| A03 | P01/P09 | Two-Python CI, isolated installed wheel/sdist/entrypoint |
+| A04 | P03/P05/P08 | test_acceptance network guards + source hash + export tests |
+| A05 | P06 | tui/test_navigation and installed PTY |
+| A06 | P03 | datasets/test_importers |
+| A07 | P03/P06 | datasets/test_canonical, test_inference, tui/test_states |
+| A08 | P03/P06 | datasets/test_prepare + tui/test_states |
+| A09 | P04/P07 | pipeline/test_eligibility + tui/test_navigation + test_acceptance |
+| A10 | P04/P07 | pipeline/test_eligibility + tui/test_states |
+| A11 | P04/P07 | pipeline/test_eligibility + test_no_leakage + tui/test_states |
+| A12 | P04 | pipeline/test_no_leakage + test_models |
+| A13 | P02/P04/P07 | pipeline/test_models + test_eligibility + tui/test_states |
+| A14 | P05/P07 | training/test_protocol, test_lifecycle + responsiveness Pilot |
+| A15 | P05/P07 | training/test_lifecycle + real-child ownership assertions |
+| A16 | P04/P07 | pipeline/test_metrics + tui/test_states |
+| A17 | P07 | four-task test_acceptance and inspection captures |
+| A18 | P08 | prediction/test_runtime + Try Pilot |
+| A19 | P02/P08 | export/test_wheel + test_security |
+| A20 | P02/P08 | export/test_install, all six real wheels |
+| A21 | P02/P08 | export/test_security + ZIP/privacy inspection |
+| A22 | P06–P09 | tui/test_navigation, test_resize + PTY |
+| A23 | P05–P09 | state/protocol tests + tui/test_states |
+| A24 | P09/P10 | Full release commands and CI matrix |
+| A25 | Every phase/P10 | Documentation/link/coverage review and report |
+| A26 | P10 | Final status/history/report provenance review |
+| A27 | P01/P09 | Documented dirty/stale/unknown-result recovery rehearsal |
+| A28 | P06–P09 | DESIGN_SYSTEM nine-item review, color/monochrome captures, contrast and Pilot |
+
+Final planning verification: `python3 docs/v1/verify_planning.py` passed for 20 Markdown files, local links/fences, 10 phases, 30 units, 28 mapped acceptance IDs and 21 default-palette contrast pairs. Baseline pytest: 15 passed. `git diff --check` passed; production/test/demo/asset/requirements scoped diff empty. These are planning/baseline checks, not completed V1 acceptance.

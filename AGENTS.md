@@ -3,7 +3,7 @@
 MLForge V1 is a local, full-screen Textual machine-learning workbench. Dataset files never leave the machine. This repository also preserves the original NumPy learning implementations.
 
 ## Read first
-Start with [docs/v1/README.md](docs/v1/README.md), then read all normative specifications and [CODEX_EXECUTION.md](docs/v1/CODEX_EXECUTION.md) before coding. The specifications are the source of truth; this guide is an index, not a competing specification. The audit distinguishes current code from planned code.
+For initial onboarding start with [docs/v1/README.md](docs/v1/README.md), then read all normative specifications and [CODEX_EXECUTION.md](docs/v1/CODEX_EXECUTION.md) before coding. The specifications are the source of truth; this guide is an index, not a competing specification. The audit distinguishes current code from planned code.
 
 ## Invariants
 - UI is presentation only; core modules must import without Textual.
@@ -28,4 +28,4 @@ After foundation: `python -m pip install -e '.[dev,demos]' -c requirements/const
 Release: use every command and manual check in TEST_PLAN.md, including clean-wheel installs and exported-wheel verification. Do not claim future commands already exist.
 
 ## Resume and documentation
-Read [RESUME_PROTOCOL.md](docs/v1/RESUME_PROTOCOL.md) and the Current checkpoint at the top of BUILD_LOG.md. Inspect status/history/diff, reconcile partial work and unknown test results, and rerun the relevant checks before continuing the next small work unit. Update that checkpoint throughout work, not only before stopping. The same [CODEX_PROMPT.md](docs/v1/CODEX_PROMPT.md) starts or resumes the build. Never discard uncommitted work or infer success from a checkbox. Update canonical documents when an authorized detail changes; log rationale and evidence. Finish with ACCEPTANCE_CRITERIA.md evidence and V1_BUILD_REPORT.md.
+For continuation, read [BUILD_STATE.md](docs/v1/BUILD_STATE.md), then [RESUME_PROTOCOL.md](docs/v1/RESUME_PROTOCOL.md) and the active phase plus relevant canonical specs. BUILD_LOG is historical evidence, not the current pointer. Inspect status/history/diff, reconcile partial work and unknown test results, and rerun the relevant checks before continuing the next small work unit. Update BUILD_STATE throughout work, not only before stopping. The same [CODEX_PROMPT.md](docs/v1/CODEX_PROMPT.md) starts or resumes the build. Never discard uncommitted work or infer success from a checkbox. Update canonical documents when an authorized detail changes; log rationale and evidence. Finish with ACCEPTANCE_CRITERIA.md evidence and V1_BUILD_REPORT.md.

@@ -1,45 +1,16 @@
 # UX flow and interaction specification
 
-## Shell and visual system
-Full-screen Textual app, one primary task per screen. Persistent compact brand/step header, scrollable body, visible status and context footer. Primary surface #101820, elevated #182630, text #E6EEF3, muted #AEC0CC, accent #66D9C3, warning #F3C477, error #FF8A91; tune for real terminal legibility without relying on color alone. Use restrained bold labels, 1-row vertical gaps and 2-column horizontal padding. No ASCII logo wall, dense dashboard or animation beyond activity feedback.
-
-At >=100 columns split preview/help where useful; 80..99 stack panels and scroll. Primary buttons/labels remain reachable at 80x24; tables scroll horizontally and expose selected-cell details. Below 80x24 show dimensions and "Resize to at least 80 × 24"; keep Cancel/Ctrl+Q functioning and restore prior focus/state on resize. Resize never reloads data or retrains.
+## Shell and interaction
+Full-screen Textual app, one primary task per screen. [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) is the sole owner of colors, spacing, visual states, component treatment, responsive breakpoints and the required screen-review checklist. Apply that contract during every TUI phase.
 
 Tab/Shift+Tab move among controls. Up/Down navigate focused lists; Left/Right scroll tables where appropriate. Enter activates focused action/selects. Space toggles selections. ? opens help for the focused item, Esc closes help restoring exact focus. B/Esc go back when not editing/modal. Q quits outside text inputs; Ctrl+Q works everywhere through quit confirmation/cleanup. In editable text, q/b/? and Space are normal characters; F1 provides help and Esc exits field/modal before back. Never intercept these letters as global priority bindings. Footer shows only active keys, with F1 in text fields. Mouse is optional.
 
 Help is a compact scrollable modal at small sizes, optional side panel at wide sizes, backed by one help catalog. It must not move the selected list item, advance a workflow or clear inputs. Focus order follows reading order; screen entry focuses its primary list/input, errors focus the invalid field, async completion never unexpectedly steals focus.
 
-## Welcoming visual direction and screen quality gate
-The experience should feel calm, inviting and deliberate to a first-time user. The existing palette is the V1 default dark theme; one coherent theme is sufficient, no theme editor or decorative feature scope. Use named TCSS tokens for the colors defined above, so screens cannot drift into unrelated styles.
+## Product language and orientation
+Keep language practical: "Choose what to predict", "Choose the information to use", "Ready to train". Technical explanations belong in contextual help; safety-critical warnings remain visible. Use the four exact Goal labels, with descriptions hidden until help. Type labels stay consistent across preview, selection and Try.
 
-| Role | Treatment |
-|---|---|
-| Background and structure | Dark blue-charcoal main surface, slightly lighter content areas, restrained thin separators; no border around every label |
-| Primary choice/focus | Turquoise accent with a visible marker/border and clear selected text; focus and checked state must be visually distinguishable |
-| Success | Turquoise check plus a word such as Completed; no color-only meaning |
-| Warning | Amber label and short reason, next to the affected choice |
-| Error | Soft red label, short explanation and recovery action; never a red full-screen traceback |
-| Secondary information | Readable muted blue-grey; important input labels never look disabled |
-
-Use one prominent primary action per decision screen, stable Back placement and a small context footer. The Welcome screen still has only the Enter instruction. Keep headings short, sentence-case controls, aligned label/input columns and consistent spacing; terminal font is user-controlled, so use hierarchy through weight, spacing and grouping. No gradients, gratuitous emoji, flashing text, typewriter introductions, full-screen transitions or artificial waiting. Activity is the only animated state; a static busy indicator remains understandable when animations are disabled.
-
-Keep the user's language practical: "Choose what to predict", "Choose the information to use", "Ready to train". Technical terms and full explanations belong in contextual help, while safety-critical warnings stay visible. Do not hide required decisions in help. Keep the four Goal labels exactly as specified, with descriptions hidden until help is requested. State labels such as Number and Category remain consistent across preview, selection and Try.
-
-At each step, the user can tell where they are, what needs a decision and what happens next. Use a small named stage indicator (Dataset / Goal / Training / Results / Export) after Welcome; it is orientation, not a second clickable route that bypasses guards. Within screens show only relevant detail, not a long progress questionnaire. Good defaults are visibly selected, never silently committed. Errors retain inputs and point to a correction. Example datasets are easy to reach directly from Load; no tutorial wizard or signup.
-
-### Required screen review checklist
-Apply during P06, P07 and P08, then repeat across the full flow in P09. Record per-screen evidence and defects in that phase's BUILD_LOG entry; do not mark a screen polished just because widgets render.
-1. A first-time user sees one clear title/question and the next action without opening help.
-2. Normal content fits the documented terminal sizes; scrollable content and all actions remain reachable, without clipped labels or hidden warnings.
-3. Focus, selection, disabled reason and busy state are distinguishable without color; inspect a monochrome capture as well as the normal palette.
-4. Keyboard-only forward/back/help flow preserves input and focus; actions do not steal typed characters.
-5. Text has readable contrast. Check actual text/background pairs (target >=4.5:1 for normal text in the default palette); do not assume the palette alone proves every selected/disabled state is readable.
-6. Empty, loading, validation failure, runtime failure and success each explain the next action using brief, consistent wording.
-7. Tables align values, clearly label units/metrics and show full details on demand; displayed mock metrics are never used as real results.
-8. Switching screens or resizing does not flash raw logs, lose state or make a primary control unreachable; real async work remains cancellable.
-9. Export success explains what was created and how to use it, with a selectable path and task-correct example.
-
-Any ambiguous primary action, invisible focus, inaccessible action at 80x24, severe contrast issue or unreadable error blocks that phase. Fix these while building the screen, not only in a final cosmetic pass. TUI screenshots and PTY evidence must come from the actual implementation; design illustrations are not release evidence.
+After Welcome show Dataset / Goal / Training / Results / Export as a compact named stage indicator. It is orientation, not a clickable route bypassing guards. Keep defaults visibly selected and require confirmation; errors retain input and point to a correction. Examples are directly reachable from Load; no tutorial wizard or signup.
 
 ## Screen contract
 | State | Content and primary action | Exit/guards |

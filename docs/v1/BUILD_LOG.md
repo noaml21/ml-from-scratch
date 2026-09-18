@@ -1,20 +1,6 @@
 # MLForge V1 build log
 
-## Current checkpoint
-- Updated: 2026-09-18T17:03:26+00:00; planning refinement only, implementation not started.
-- Repository: noaml21/ml-from-scratch; observed checkout /home/noam/Projects/ml-from-scratch.
-- Observed branch: planning/mlforge-v1; required implementation branch: v1/mlforge.
-- Planning base: use the complete latest planning/mlforge-v1 tip, including this continuation refinement.
-- Observed HEAD before refinement: 046621f19aa583e797246d7552c3ecf0e0ef9fa5 (historical, not a pinned start ref).
-- Active phase/unit: P01 / P01.1; phase NOT STARTED; unit NOT STARTED.
-- Last verified implementation phase/commit/unit: none. Original 15-test baseline was verified; this is not V1 progress.
-- What exists: authoritative planning docs and original educational baseline; no MLForge package.
-- Local refinement: documentation only; see planning refinement history below for commit/evidence. Reconcile git status on entry.
-- Last production check: original 15 tests passed; detailed environment/commands in Planning baseline.
-- Known implementation failure/repair count: none / 0.
-- Next action: read specifications, inspect branch/status/history, create or continue v1/mlforge from complete planning tip, then establish P01.1 baseline with python -m pytest -v in the project environment.
-- Owned running operations: none at checkpoint creation; inspect before assuming this remains true.
-- Remote durability: original planning commit was pushed; resolve current planning tracking ref for refinement delivery. No unverified production files existed at checkpoint creation.
+Current pointer: [BUILD_STATE.md](BUILD_STATE.md). This file records historical events and phase evidence; it is not a second mutable resume pointer.
 
 ## Planning baseline — COMPLETE (not a V1 implementation)
 - Date: 2026-09-18.
@@ -31,7 +17,7 @@
 - Planning verification: all 16 Markdown files/link/fence checks passed; 10 complete phase records and 26 unique acceptance IDs; git diff --check passed; production/test/demo/asset/requirements diff empty.
 - No V1 feature has been implemented or release-verified.
 
-## Phase ledger
+## Phase ledger — planning snapshot, no implementation completed
 | Phase | Status | Commit | Next action |
 |---|---|---|---|
 | P01 | NOT STARTED | — | Read all specs; branch from planning tip; baseline/package foundation |
@@ -57,7 +43,7 @@
 - Commit subject / SHA once available:
 - Remaining risks:
 - Next exact action:
-- Completed/current work-unit IDs and Current checkpoint update:
+- Completed work-unit IDs and corresponding BUILD_STATE update:
 
 ## Planning refinement — verified documentation change
 - Scope: continuation protocol, one reusable start/resume prompt, one Current checkpoint, 30 work units inside the same 10 phases, and explicit intuitive/color/contrast/focus UX gates.
@@ -66,3 +52,13 @@
 - Commands: git diff --check passed; PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest -q -p no:cacheprovider completed, exit 0, 15 passed on the existing Python 3.12 project environment.
 - Commit subject: docs: add interruption recovery and explicit UX quality gates (resolve SHA from Git history).
 - All implementation phases remain NOT STARTED. Current next unit is P01.1.
+
+## Planning recovery — 2026-09-18
+- Recovered local commit 455553b3a5fe803fc8a032d4970b1d8e04eb3236 after approved 046621f19aa583e797246d7552c3ecf0e0ef9fa5. Branch planning/mlforge-v1; status/staged/unstaged/untracked inventories empty before edits. Remote remained at 046621f; earlier refinement had not been pushed.
+- Preserved the completed refinement. Its former current checkpoint (observed HEAD 046621f, P01.1 NOT STARTED, no implementation commit) is superseded by BUILD_STATE; this history and Git retain the original observation.
+- Added BUILD_STATE and DESIGN_SYSTEM; updated resume/authority/handoff/phase/test/acceptance/index pointers and planning coverage. Original production, tests, dependencies, demos and assets remain untouched.
+- Resolved export nested-member limit conflict using an in-memory 100-tree forest archive probe: 502 members; canonical limits and related tests updated without adding features.
+- Implementation remains NOT STARTED. Current action belongs only in BUILD_STATE. Planning commit subject: docs: separate resumable state and define terminal design system.
+- Final pre-commit verification: `python3 docs/v1/verify_planning.py` passed: 20 Markdown files/local links/fences, index ownership, 10 phase contracts, 30 units, 28 mapped acceptance IDs, 21 default palette pairs. Initial contrast failure for error/selected was repaired by darkening selected background and rerunning the checker.
+- Baseline command: `PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest -q -p no:cacheprovider` → exit 0, 15 passed. `git diff --check` passed. Scoped diff against 93272b for src/tests/demos/assets/requirements.txt was empty. Inspected final planning diff and new state/design/checker files.
+- Delivery commit is identified by the subject above; its exact SHA and remote equality must be verified after commit/push, not invented inside its own contents. No actual TUI, recovery-fixture or installed-export acceptance is claimed by planning checks.

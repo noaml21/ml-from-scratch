@@ -22,7 +22,7 @@ Required flow: Welcome → Load Dataset → Parse → Preview and verify/correct
 One required exporter: installable Python wheel containing the fitted pipeline and inference runtime. All four goals export with the task-correct API in EXPORT_SPEC.md. No Saved Model or Full Project menu placeholders.
 
 ## Product boundaries
-- One dataset and one current experiment per session. Back edits are supported with explicit downstream invalidation. No disk project history/resume UI; BUILD_LOG resumes implementation, not a user's experiment.
+- One dataset and one current experiment per session. Back edits are supported with explicit downstream invalidation. No disk project history/resume UI; BUILD_STATE and RESUME_PROTOCOL resume implementation, not a user's experiment.
 - Source data is read-only. No automatic row deletion, data repair, target inference, engineering, outlier removal or balance resampling.
 - Explicitly warn about random-split suitability for time-ordered/grouped observations; V1 has no grouped/time-series splitter.
 - A comparison is a small local holdout experiment, not proof of production validity. Unsupervised diagnostics are descriptive, not predictive accuracy.

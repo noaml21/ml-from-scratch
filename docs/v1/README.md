@@ -9,7 +9,8 @@ Start with REPOSITORY_AUDIT.md for what actually exists. Then read PRODUCT_SPEC.
 |---|---|
 | Baseline evidence, technical debt, reference lessons | [REPOSITORY_AUDIT.md](REPOSITORY_AUDIT.md) |
 | Scope, tasks, supported platforms, explicit exclusions | [PRODUCT_SPEC.md](PRODUCT_SPEC.md) |
-| Screens, interaction, help, focus, visual states | [UX_FLOW.md](UX_FLOW.md) |
+| Screens, navigation, keyboard semantics, focus restoration | [UX_FLOW.md](UX_FLOW.md) |
+| Visual tokens, component states, layouts and screen quality gates | [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) |
 | Boundaries, contracts, process lifecycle, dependencies | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Formats, cells, types, overrides, resource limits, preparation prompt | [DATASET_SPEC.md](DATASET_SPEC.md) |
 | Eligibility, features, split, transforms, model defaults, metrics | [ML_PIPELINE.md](ML_PIPELINE.md) |
@@ -20,11 +21,14 @@ Start with REPOSITORY_AUDIT.md for what actually exists. Then read PRODUCT_SPEC.
 | Branching, autonomy, decisions and finish protocol | [CODEX_EXECUTION.md](CODEX_EXECUTION.md) |
 | Checkpoint cadence, interrupted-work recovery and durable continuation | [RESUME_PROTOCOL.md](RESUME_PROTOCOL.md) |
 | One reusable entry prompt for start or resume | [CODEX_PROMPT.md](CODEX_PROMPT.md) |
-| Running implementation evidence; initially not started | [BUILD_LOG.md](BUILD_LOG.md) |
+| Sole current resumable snapshot; initially not started | [BUILD_STATE.md](BUILD_STATE.md) |
+| Historical implementation evidence; initially not started | [BUILD_LOG.md](BUILD_LOG.md) |
 | Planning consistency/coverage audit | [PLANNING_REVIEW.md](PLANNING_REVIEW.md) |
 
 The implementer creates `V1_BUILD_REPORT.md` at release. Do not create a report that implies unperformed verification. README and audit are indexes/evidence; they do not override normative behavior. There are no hidden requirements from the planning chat.
 
 Extra documents beyond the requested set: this index prevents duplicate ownership; the repository audit anchors design in code; PLANNING_REVIEW records cross-document coverage; RESUME_PROTOCOL owns interruption recovery; CODEX_PROMPT provides one reusable start/resume instruction. A separate generic ADR system, project database or research backlog is unnecessary for V1.
 
-Continuation starts at the Current checkpoint in BUILD_LOG.md and follows RESUME_PROTOCOL.md. CODEX_PROMPT.md is the current handoff prompt; it uses the latest planning branch rather than the original planning commit.
+Continuation starts at BUILD_STATE.md and follows RESUME_PROTOCOL.md; BUILD_LOG.md preserves history. DESIGN_SYSTEM.md separates reusable visual rules from screen behavior. These separate files prevent a long history from hiding the next action and prevent per-screen styles from drifting. CODEX_PROMPT.md uses the verified planning SHA supplied in the launch instruction; an existing implementation retains its recorded base.
+
+Planning checks: `python3 docs/v1/verify_planning.py` validates local links, ownership pointers, phase/acceptance coverage and default palette contrast. It does not replace semantic review or actual TUI verification.

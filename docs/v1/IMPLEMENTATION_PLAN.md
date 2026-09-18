@@ -1,6 +1,6 @@
 # Ordered implementation plan
 
-Each phase is gated. Complete tests, canonical docs, BUILD_LOG evidence and diff review before moving on. Split a phase into smaller logical verified commits when useful; never one final giant commit. Dependencies below are hard sequencing, not an invitation to work ahead. PRODUCT_SPEC owns scope; this document owns ordering.
+Each phase is gated. Complete tests, canonical docs, BUILD_STATE reconciliation, BUILD_LOG evidence and diff review before moving on. Split a phase into smaller logical verified commits when useful; never one final giant commit. Dependencies below are hard sequencing, not an invitation to work ahead. PRODUCT_SPEC owns scope; this document owns ordering.
 
 ## Checkpoint-sized work units
 
@@ -22,7 +22,7 @@ Execute each phase's numbered units in order; the phase sections below retain th
 ## P01 — Baseline, branch and packaging foundation
 **Depends:** complete planning branch, AGENTS/CODEX_EXECUTION read.
 **Objective:** retain educational behavior and make an installable minimal package with reproducible dependencies.
-**Work:** create/continue v1/mlforge from planning tip; record baseline SHAs/status/tests; add explicit setuptools discovery, __main__/--help/--version, runtime/dev/demo extras, tested constraints, test markers and CI skeleton; preserve original algorithms/imports/assets. Update README to distinguish current workbench implementation status and educational track.
+**Work:** create/continue v1/mlforge from the verified recorded planning base under CODEX_EXECUTION; record baseline SHAs/status/tests; add explicit setuptools discovery, __main__/--help/--version, runtime/dev/demo extras, tested constraints, test markers and CI skeleton; preserve original algorithms/imports/assets. Update README to distinguish current workbench implementation status and educational track.
 **Tests:** original 15 tests, all three comparisons, dependency resolution/pip check, wheel/sdist metadata/package contents, clean installed --help/--version; both Python CI versions; checkpoint recovery rehearsal per RESUME_PROTOCOL.
 **Docs:** audit baseline additions, architecture dependency choices, BUILD_LOG.
 **Complete when:** source checkout and clean installed namespace both work; constraints resolve; no broad legacy rewrite.
@@ -67,7 +67,7 @@ Execute each phase's numbered units in order; the phase sections below retain th
 ## P06 — TUI shell and dataset journey
 **Depends:** P05.
 **Objective:** polished Welcome→Load→Preview, not a terminal questionnaire.
-**Work:** shell/theme/footer/help focus; separate screens; file picker/manual/examples; parsing states; preview/table/type override; Prepare Copy/Save/fallback; responsive resize guard. Wire real application services.
+**Work:** shell/theme/footer/help focus per DESIGN_SYSTEM; separate screens; file picker/manual/examples; parsing states; preview/table/type override; Prepare Copy/Save/fallback; responsive resize guard. Wire real application services.
 **Tests:** Pilot keyboard only, text-key conflicts, load failures/cancel, override/reset, incorrect preview action, clipboard/save errors, literal untrusted content, 100x30/80x24/below minimum.
 **Docs:** README launch/first dataset, UX capture evidence, BUILD_LOG.
 **Complete when:** all supported formats reach explicit correct preview confirmation without mouse/browser.
@@ -110,3 +110,21 @@ Execute each phase's numbered units in order; the phase sections below retain th
 **Commit boundary:** "docs: record verified MLForge V1 release candidate".
 
 A phase blocked after three serious repairs follows CODEX_EXECUTION; do not jump to a later phase, reduce scope, weaken tests or report success.
+
+## Relevant reading on continuation
+Initial onboarding reads every canonical specification. On resume read AGENTS, BUILD_STATE, RESUME_PROTOCOL, CODEX_EXECUTION, this active phase, and the cross-cutting scope/architecture invariants, then the owners below. Expand reading if the actual diff crosses other boundaries. Read relevant BUILD_LOG evidence, not the entire chat.
+
+| Phase | Canonical owners to reread |
+|---|---|
+| P01 | REPOSITORY_AUDIT, ARCHITECTURE dependency/packaging, TEST_PLAN baseline |
+| P02 | ARCHITECTURE contracts, ML_PIPELINE model definitions, EXPORT_SPEC, TEST_PLAN export |
+| P03 | DATASET_SPEC, TEST_PLAN datasets, UX_FLOW preview/Prepare |
+| P04 | ML_PIPELINE, DATASET_SPEC schema, EXPORT_SPEC runtime, TEST_PLAN leakage/evaluation |
+| P05 | ARCHITECTURE lifecycle, UX_FLOW training/quit, TEST_PLAN process/state |
+| P06 | DESIGN_SYSTEM, UX_FLOW load/preview, DATASET_SPEC, TEST_PLAN Pilot |
+| P07 | DESIGN_SYSTEM, UX_FLOW configuration/results, ML_PIPELINE, ARCHITECTURE events, TEST_PLAN |
+| P08 | DESIGN_SYSTEM, UX_FLOW Try/export, EXPORT_SPEC, TEST_PLAN exported installation |
+| P09 | TEST_PLAN, ACCEPTANCE_CRITERIA, DESIGN_SYSTEM, UX_FLOW, RESUME_PROTOCOL |
+| P10 | CODEX_EXECUTION final protocol, TEST_PLAN release, ACCEPTANCE_CRITERIA, all affected docs |
+
+Each phase updates BUILD_STATE at the cadence in RESUME_PROTOCOL; BUILD_LOG retains historical evidence. These are part of every phase's documentation gate, even where its Docs line abbreviates this to BUILD_LOG.
