@@ -17,10 +17,14 @@ Start with REPOSITORY_AUDIT.md for what actually exists. Then read PRODUCT_SPEC.
 | Test fixtures, verification commands, adversarial and UX checks | [TEST_PLAN.md](TEST_PLAN.md) |
 | Ordered phases and commit gates | [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) |
 | Objective release requirements and evidence IDs | [ACCEPTANCE_CRITERIA.md](ACCEPTANCE_CRITERIA.md) |
-| Branching, autonomy, decisions, interruption and finish protocol | [CODEX_EXECUTION.md](CODEX_EXECUTION.md) |
+| Branching, autonomy, decisions and finish protocol | [CODEX_EXECUTION.md](CODEX_EXECUTION.md) |
+| Checkpoint cadence, interrupted-work recovery and durable continuation | [RESUME_PROTOCOL.md](RESUME_PROTOCOL.md) |
+| One reusable entry prompt for start or resume | [CODEX_PROMPT.md](CODEX_PROMPT.md) |
 | Running implementation evidence; initially not started | [BUILD_LOG.md](BUILD_LOG.md) |
 | Planning consistency/coverage audit | [PLANNING_REVIEW.md](PLANNING_REVIEW.md) |
 
 The implementer creates `V1_BUILD_REPORT.md` at release. Do not create a report that implies unperformed verification. README and audit are indexes/evidence; they do not override normative behavior. There are no hidden requirements from the planning chat.
 
-Extra documents beyond the requested set: this index prevents duplicate ownership; the repository audit anchors design in code; PLANNING_REVIEW records cross-document coverage. A separate generic ADR system, project database or research backlog is unnecessary for V1.
+Extra documents beyond the requested set: this index prevents duplicate ownership; the repository audit anchors design in code; PLANNING_REVIEW records cross-document coverage; RESUME_PROTOCOL owns interruption recovery; CODEX_PROMPT provides one reusable start/resume instruction. A separate generic ADR system, project database or research backlog is unnecessary for V1.
+
+Continuation starts at the Current checkpoint in BUILD_LOG.md and follows RESUME_PROTOCOL.md. CODEX_PROMPT.md is the current handoff prompt; it uses the latest planning branch rather than the original planning commit.

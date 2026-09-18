@@ -3,7 +3,7 @@
 ## Mission and reading
 Build MLForge V1 in this repository from the complete planning branch. No chat context is required. Work autonomously until every acceptance gate passes, or an actual stop condition below is reached.
 
-Before production coding read root AGENTS.md, docs/v1/README.md, REPOSITORY_AUDIT.md, every normative specification, IMPLEMENTATION_PLAN.md, TEST_PLAN.md, ACCEPTANCE_CRITERIA.md and BUILD_LOG.md. Re-read the owning contract before each phase. Inspect actual code and git status; specifications describe planned as well as existing files.
+Before production coding read root AGENTS.md, docs/v1/README.md, REPOSITORY_AUDIT.md, every normative specification, IMPLEMENTATION_PLAN.md, TEST_PLAN.md, ACCEPTANCE_CRITERIA.md, BUILD_LOG.md and RESUME_PROTOCOL.md. Re-read the owning contract before each phase. Inspect actual code and git status; specifications describe planned as well as existing files.
 
 ## Authority and conflicts
 1. Explicit current user instructions and applicable higher-priority execution safety rules.
@@ -29,13 +29,14 @@ For each phase:
 3. Run targeted checks, full suite, relevant lint/build and inspect diff for unrelated changes.
 4. Update canonical docs/help/README only where affected; keep advertised behavior honest.
 5. Record actual commands, environments, results, failures/repairs, known limits and gate status.
-6. Commit verified boundary and proceed directly to next phase.
+6. Commit and normally push a verified boundary, reconcile the Current checkpoint, and proceed directly to the next work unit or phase.
 
 Do not stop after writing a plan, creating a skeleton, finishing one phase, hitting ordinary test failures or choosing a normal implementation detail. No requests to the user to select internal variable names, module decomposition, styling minutiae or compatible package patch versions. Do not ask permission again for ordinary authorized code/test/docs/commit work. Required permissions imposed by the execution environment are handled honestly, not bypassed.
 
 Install project-local dependencies and use local temporary artifacts; no sudo/system changes. Network for dependency setup and normal Git/CI is distinct from the application's offline contract. Do not access secrets/.env or include private data in artifacts/logs.
 
-## BUILD_LOG contract and interruption
+## BUILD_LOG historical evidence
+The checkpoint cadence, field schema and restart algorithm are owned by [RESUME_PROTOCOL.md](RESUME_PROTOCOL.md). Maintain its Current checkpoint at the top of BUILD_LOG in addition to the phase history below.
 Update docs/v1/BUILD_LOG.md at meaningful boundaries, not only the end. Each phase entry contains:
 - status NOT STARTED / IN PROGRESS / VERIFIED / BLOCKED;
 - objective, started-from SHA, files changed;
@@ -45,7 +46,7 @@ Update docs/v1/BUILD_LOG.md at meaningful boundaries, not only the end. Each pha
 - commit subject/hash once known;
 - next exact action and remaining risks.
 
-Keep it concise; link detailed generated local/CI reports rather than paste unlimited logs. Never include secrets or user data. If interrupted, leave honest status/next action. New session reads guide/specs/log, inspects branch/diff/history, checks latest verified phase and reruns relevant verification before continuing incomplete work. An unchecked partial change is not a passed gate. No need to ask the user to reconstruct prior prompts.
+Keep it concise; link detailed generated local/CI reports rather than paste unlimited logs. Never include secrets or user data. Follow RESUME_PROTOCOL for any interruption, including a hard stop with a stale checkpoint. An unchecked partial change is not a passed gate.
 
 ## Failure and stop policy
 Fix failures at root cause. Investigate up to three serious distinct repair attempts for the same blocking failure; repeated command execution alone is not an attempt. Never weaken acceptance, delete tests, skip a supported task/environment, switch to unsafe serialization, fake metrics or claim tests passed to get unstuck.

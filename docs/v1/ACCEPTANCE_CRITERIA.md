@@ -30,5 +30,7 @@ Every row is mandatory. Status initially NOT VERIFIED; implementation must repla
 | A24 | Complete suite, lint, build, metadata, comparisons, isolated release verifier pass; no critical skips or weakened tests | exact TEST_PLAN command results + CI URLs |
 | A25 | README commands/environment/scope true; docs canonical and consistent; BUILD_LOG resumable; V1_BUILD_REPORT has evidence, limitations and verified SHA | doc link/coverage review + final scoped diff |
 | A26 | Final report identifies review hotspots and separates tested implementation SHA from evidence-only commit; worktree clean except declared ignored test artifacts | final git status/log and report |
+| A27 | Interruption recovery reconstructs the next small unit from checkpoint + Git, preserves partial local edits, treats unknown checks as unverified and does not restart completed work | P01/P09 recovery rehearsal evidence per RESUME_PROTOCOL |
+| A28 | Every implemented screen passes UX_FLOW screen-review checklist; visual/focus/state consistency, actual text contrast and clear next actions demonstrated | per-phase checklist + actual color/monochrome captures at supported sizes |
 
 Release is not complete if a supported environment is unverified, network restrictions prevent clean install checks, or real process cancellation/security cases are skipped. Report blocked with completed work preserved; do not silently redefine the release target.

@@ -7,7 +7,7 @@ Planning only. Reviewed 2026-09-18 against the requested product flow and inspec
 - DATASET_SPEC owns parsing/type/override semantics; ML_PIPELINE owns eligibility and learned transforms.
 - ARCHITECTURE owns operation process groups, event revisions and cancellation; UX uses those same states.
 - EXPORT_SPEC owns Predictor API and compatibility; Try delegates to that same runtime.
-- IMPLEMENTATION_PLAN gates ten ordered phases; acceptance has 26 measurable requirements; TEST_PLAN names concrete adversarial fixtures and release commands.
+- IMPLEMENTATION_PLAN gates ten ordered phases; acceptance has 28 measurable requirements; TEST_PLAN names concrete adversarial fixtures and release commands.
 - CODEX_EXECUTION distinguishes implementation interruption from user-session persistence and final implementation SHA from the evidence commit.
 - No production V1 claim or feature implementation is hidden in the planning branch.
 
@@ -75,3 +75,12 @@ Planning only. Reviewed 2026-09-18 against the requested product flow and inspec
 7. Repository has no license; no licensing grant or public distribution is invented.
 
 No unresolved product choice requires the user to mediate ordinary implementation. Library version resolution and internal decomposition remain evidence-based implementation tasks under explicit contracts.
+
+## Continuation and visual refinement — 2026-09-18
+- Added RESUME_PROTOCOL as sole owner of checkpoint/recovery mechanics; CODEX_EXECUTION retains overall execution authority and links it.
+- Added CODEX_PROMPT as one start-or-resume entry, based on the complete planning branch, replacing the original first-commit-only prompt.
+- Added one Current checkpoint to BUILD_LOG and 30 ordered unit IDs inside the existing ten phases. Phase gates are unchanged; a completed unit cannot pretend to pass a phase.
+- Added explicit hard-stop/dirty-checkout/unknown-check/stale-log recovery, verified-commit push cadence and honest limits of fresh-clone recovery. No promise of automatic restart when usage returns.
+- Expanded UX_FLOW with palette roles, clear next actions, humane copy and a nine-item screen review. Added early UX gates, color/monochrome/contrast evidence and acceptance A27/A28 (28 total).
+- No product functionality was added; all changes remain planning/documentation. The original 16-file/26-ID verification above records the first planning commit, not the refined document count.
+- Refinement verification: 18 Markdown files and local links/fences checked; 10 phase contracts, 30 unique work units and 28 acceptance IDs checked; git diff --check passed; original pytest suite rerun, 15 passed. Recovery rehearsal and real TUI visual gates are specified for implementation, not claimed completed now.

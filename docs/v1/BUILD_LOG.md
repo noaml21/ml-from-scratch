@@ -1,5 +1,21 @@
 # MLForge V1 build log
 
+## Current checkpoint
+- Updated: 2026-09-18T17:03:26+00:00; planning refinement only, implementation not started.
+- Repository: noaml21/ml-from-scratch; observed checkout /home/noam/Projects/ml-from-scratch.
+- Observed branch: planning/mlforge-v1; required implementation branch: v1/mlforge.
+- Planning base: use the complete latest planning/mlforge-v1 tip, including this continuation refinement.
+- Observed HEAD before refinement: 046621f19aa583e797246d7552c3ecf0e0ef9fa5 (historical, not a pinned start ref).
+- Active phase/unit: P01 / P01.1; phase NOT STARTED; unit NOT STARTED.
+- Last verified implementation phase/commit/unit: none. Original 15-test baseline was verified; this is not V1 progress.
+- What exists: authoritative planning docs and original educational baseline; no MLForge package.
+- Local refinement: documentation only; see planning refinement history below for commit/evidence. Reconcile git status on entry.
+- Last production check: original 15 tests passed; detailed environment/commands in Planning baseline.
+- Known implementation failure/repair count: none / 0.
+- Next action: read specifications, inspect branch/status/history, create or continue v1/mlforge from complete planning tip, then establish P01.1 baseline with python -m pytest -v in the project environment.
+- Owned running operations: none at checkpoint creation; inspect before assuming this remains true.
+- Remote durability: original planning commit was pushed; resolve current planning tracking ref for refinement delivery. No unverified production files existed at checkpoint creation.
+
 ## Planning baseline — COMPLETE (not a V1 implementation)
 - Date: 2026-09-18.
 - Source: ml-from-scratch main 93272b473b6079960e903b45bd3a625c0d19be59.
@@ -41,3 +57,12 @@
 - Commit subject / SHA once available:
 - Remaining risks:
 - Next exact action:
+- Completed/current work-unit IDs and Current checkpoint update:
+
+## Planning refinement — verified documentation change
+- Scope: continuation protocol, one reusable start/resume prompt, one Current checkpoint, 30 work units inside the same 10 phases, and explicit intuitive/color/contrast/focus UX gates.
+- Files: AGENTS.md; docs/v1/{README,RESUME_PROTOCOL,CODEX_PROMPT,CODEX_EXECUTION,BUILD_LOG,IMPLEMENTATION_PLAN,UX_FLOW,TEST_PLAN,ACCEPTANCE_CRITERIA,PLANNING_REVIEW}.md.
+- Validation: inline Python checker passed for 18 Markdown files, local links/fences, 10 complete phases, 30 unique work units, 28 ordered acceptance IDs and one Current checkpoint/prompt.
+- Commands: git diff --check passed; PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest -q -p no:cacheprovider completed, exit 0, 15 passed on the existing Python 3.12 project environment.
+- Commit subject: docs: add interruption recovery and explicit UX quality gates (resolve SHA from Git history).
+- All implementation phases remain NOT STARTED. Current next unit is P01.1.

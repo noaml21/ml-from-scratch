@@ -2,11 +2,28 @@
 
 Each phase is gated. Complete tests, canonical docs, BUILD_LOG evidence and diff review before moving on. Split a phase into smaller logical verified commits when useful; never one final giant commit. Dependencies below are hard sequencing, not an invitation to work ahead. PRODUCT_SPEC owns scope; this document owns ordering.
 
+## Checkpoint-sized work units
+
+Execute each phase's numbered units in order; the phase sections below retain the full scope/tests/completion gate. Each unit includes a targeted check of its outcome, with exact command and files recorded in BUILD_LOG. Unit completion is not phase verification. RESUME_PROTOCOL owns checkpoint cadence and safe recovery. Split an oversized unit further in the phase log; don't invent new phases or skip gates.
+
+| Phase | Unit .1 | Unit .2 | Unit .3 |
+|---|---|---|---|
+| P01 | P01.1 inspect branch/baseline and seed checkpoint | P01.2 package/constraints/installed entrypoint | P01.3 CI baseline + continuation rehearsal + phase gate |
+| P02 | P02.1 typed core/model contracts | P02.2 shared prediction/persistence contracts | P02.3 six model wheel roundtrips + phase gate |
+| P03 | P03.1 bounded canonical importers | P03.2 inference/override/Prepare rules | P03.3 examples + adversarial data tests + phase gate |
+| P04 | P04.1 eligibility/features/split | P04.2 fitted transforms and model defaults | P04.3 evaluation/no-leakage/bundle tests + phase gate |
+| P05 | P05.1 worker protocol and ownership | P05.2 cancellation/timeouts/failure isolation | P05.3 state invalidation and lifecycle tests + phase gate |
+| P06 | P06.1 styled shell/help/focus | P06.2 picker/path/examples/preview | P06.3 override/errors/resize + UX checklist + phase gate |
+| P07 | P07.1 goal/target/features/preprocessing | P07.2 model selection/live training | P07.3 task results/inspection + UX checklist + phase gate |
+| P08 | P08.1 Try forms and runtime parity | P08.2 export flow and atomic/error paths | P08.3 installed-wheel checks + UX checklist + phase gate |
+| P09 | P09.1 full E2E and recovery rehearsal | P09.2 keyboard/visual/resize polish | P09.3 release verifier/CI/acceptance evidence + phase gate |
+| P10 | P10.1 freeze and verify code candidate | P10.2 build report/log/doc consistency | P10.3 evidence commit, clean status and handoff |
+
 ## P01 — Baseline, branch and packaging foundation
 **Depends:** complete planning branch, AGENTS/CODEX_EXECUTION read.
 **Objective:** retain educational behavior and make an installable minimal package with reproducible dependencies.
 **Work:** create/continue v1/mlforge from planning tip; record baseline SHAs/status/tests; add explicit setuptools discovery, __main__/--help/--version, runtime/dev/demo extras, tested constraints, test markers and CI skeleton; preserve original algorithms/imports/assets. Update README to distinguish current workbench implementation status and educational track.
-**Tests:** original 15 tests, all three comparisons, dependency resolution/pip check, wheel/sdist metadata/package contents, clean installed --help/--version; both Python CI versions.
+**Tests:** original 15 tests, all three comparisons, dependency resolution/pip check, wheel/sdist metadata/package contents, clean installed --help/--version; both Python CI versions; checkpoint recovery rehearsal per RESUME_PROTOCOL.
 **Docs:** audit baseline additions, architecture dependency choices, BUILD_LOG.
 **Complete when:** source checkout and clean installed namespace both work; constraints resolve; no broad legacy rewrite.
 **Commit boundary:** "build: establish MLForge package and preserve educational baseline".
@@ -77,7 +94,7 @@ Each phase is gated. Complete tests, canonical docs, BUILD_LOG evidence and diff
 ## P09 — Integration, polish and adversarial verification
 **Depends:** P08.
 **Objective:** remove severe usability/reliability gaps before release.
-**Work:** finish TEST_PLAN full matrix, installed-app E2E, full-flow keyboard/resize/error inspection, minimum terminal sizing, statuses and focus; implement deterministic release verifier/wheelhouse setup; final CI matrix. Keep scope fixed; repair root causes.
+**Work:** finish TEST_PLAN full matrix, installed-app E2E, full-flow keyboard/resize/error inspection, interruption recovery rehearsal, minimum terminal sizing, statuses and focus; implement deterministic release verifier/wheelhouse setup; final CI matrix. Keep scope fixed; repair root causes.
 **Tests:** full suite/lint/build/twine/comparisons, every release verifier step and no-network mode, visual/PTY checks, bounded-input performance guard.
 **Docs:** README supported environments, installation/troubleshooting/privacy/limitations; screenshots; acceptance evidence; BUILD_LOG.
 **Complete when:** every acceptance ID has passing evidence or an explicit blocker (a blocker prevents P10 completion).
