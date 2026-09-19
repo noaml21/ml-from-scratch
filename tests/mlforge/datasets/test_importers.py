@@ -174,6 +174,9 @@ def test_local_regular_files_and_symlinks(tmp_path):
     with pytest.raises(DomainError) as caught:
         load_dataset(tmp_path / "absent.csv")
     assert caught.value.code == "FILE_READ"
+    with pytest.raises(DomainError) as caught:
+        load_dataset(tmp_path / "invalid\x00.csv")
+    assert caught.value.code == "FILE_READ"
 
 
 def test_open_identity_race_and_permission(tmp_path, monkeypatch):

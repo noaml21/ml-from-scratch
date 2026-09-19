@@ -1,7 +1,5 @@
 name: Verify MLForge
 on:
-  push:
-    branches: [v1/mlforge]
   pull_request:
     branches: [v1/mlforge]
   workflow_dispatch:

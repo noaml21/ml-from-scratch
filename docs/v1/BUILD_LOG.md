@@ -167,3 +167,16 @@ Current pointer: [BUILD_STATE.md](BUILD_STATE.md). This file records historical 
 - Starting full pytest/lint/format/build/pip/docs/diff checks; durable statuses .mlforge-build/checks-p03.1.json. P03.2/P03.3 remain incomplete.
 
 - P03.1 full verification session 57006 completed exit 0: 188 passed in 408.06s; Ruff check/format, build/twine, pip check, planning checker and diff check all passed. Durable per-command evidence .mlforge-build/checks-p03.1.json. Reviewed importer/test/doc paths; commit subject: feat(data): add bounded canonical importers. Phase remains in progress; next unit P03.2.
+
+- P03.1 committed/pushed as 437bc6d. P03.2 starts: datasets/inference.py interprets all bounded cells and creates schema statistics; validation.py owns atomic override/reset and preview/provenance helpers; prepare.py provides safe local text and exclusive save. Existing immutable records remain the seam. No model fitting or UI work.
+
+## P03.2 — schema review and Prepare present, full checks pending
+- Added full-table inference/profile services, pure scalar interpretation, atomic type override/reset, effective provenance, bounded preview and control escaping. Unknown/all-missing stays unusable; large integer and leading-zero warnings preserve raw values; compatible JSON number/text and boolean/text pairs retain semantic types, incompatible mixtures require acknowledgement or explicit override.
+- Added stable structural Prepare prompt with format/diagnostic allowlists, no source-content arguments, local privacy note and private atomic no-overwrite .txt save. Failure leaves no partial final file. Null-byte path review found a safe-error gap in P03.1; importer now maps invalid paths without swallowing DomainError.
+- Dataset/architecture checks: 88 passed, session 58882 exit 0; Ruff passed. Initial fixture import ordering corrected; no failing runtime assertion. Full suite/build/docs checks begin with durable .mlforge-build/checks-p03.2.json evidence; P03.3 remains incomplete.
+
+## P03.2 VERIFIED / user-authorized verification cadence
+- Reconciled branch/status/staged/unstaged/untracked/history and planning ancestry after continuation. P03.2 source already exists; preserved it and external CLAUDE.md. Collected existing session 71949 exit 0: 218 passed in 370.43s, all eight full verification commands passed; no duplicate full run launched.
+- P03.1 CI [35450994927](https://github.com/noaml21/ml-from-scratch/actions/runs/35450994927) passed at 437bc6dce8611e6947fc71c7c598c16ab3940a57.
+- User explicitly changed cadence: focused/subsystem tests and Ruff at work-unit boundaries; full/build/docs checks primarily at phase gates; installed-consumer repeats only for export/runtime impact or explicit gate. Updated CODEX_EXECUTION/TEST_PLAN and removed automatic push trigger from complete CI; explicit phase-gate dispatch and PR runs preserve the entire matrix. P09/P10 and acceptance remain unchanged.
+- Reviewed production/tests/guides/cadence changes. Intended commit: feat(data): add schema review and preparation guidance. P03.3 examples/adversarial phase gate remains next; P04-P10 not started.

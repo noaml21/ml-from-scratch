@@ -26,7 +26,7 @@ Small logical phase commits contain code + tests + affected docs + BUILD_STATE/B
 For each phase:
 1. Mark IN PROGRESS with baseline SHA and scope; inspect relevant current code.
 2. Implement the smallest complete change, add non-trivial logic tests and preserve existing tests.
-3. Run targeted checks, full suite, relevant lint/build and inspect diff for unrelated changes.
+3. During and at the end of a work unit, run focused/subsystem tests and relevant Ruff checks; inspect the diff. Run the full suite, packaging/build and project-wide checks at phase gates. Rerun isolated exported-wheel installations only when export/runtime behavior can be affected or an explicit phase/release gate requires them. Expand checks when targeted results expose cross-cutting risk. P09/P10 retain complete release verification; TEST_PLAN owns the coverage requirements.
 4. Update canonical docs/help/README only where affected; keep advertised behavior honest.
 5. Record actual commands, environments, results, failures/repairs, known limits and gate status.
 6. Commit and normally push a verified boundary, reconcile BUILD_STATE, and proceed directly to the next work unit or phase.

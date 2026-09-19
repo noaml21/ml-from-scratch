@@ -259,7 +259,9 @@ def load_dataset(path: str | Path) -> TabularDataset:
                 raise _error(
                     "FILE_CHANGED", "The file changed while reading. Retry the import."
                 )
-    except (OSError, RuntimeError):
+    except DomainError:
+        raise
+    except (OSError, RuntimeError, ValueError):
         raise _error(
             "FILE_READ",
             "Could not read this local file. Check its location and permissions.",

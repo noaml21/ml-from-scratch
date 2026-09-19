@@ -7,7 +7,7 @@ Keep `tests/test_{kmeans,logistic_regression,pca}.py`.
 Add `tests/mlforge/{datasets,pipeline,execution,prediction,export,tui}/`, common deterministic fixture factories and `tests/mlforge/test_acceptance.py`.
 Use pytest + pytest-asyncio for core/async/Pilot tests. Keep property-like boundary matrices parametrized; no need for a new property-test dependency. Real subprocess fixtures use event handshakes and deadlines, not arbitrary long sleeps.
 
-P01 captures original `python -m pytest -v`, three comparison scripts and pip check. Each phase runs targeted tests plus full `python -m pytest -q`, relevant lint/build and diff review before commit. No critical skipped/xfail tests count as a pass. Slow installation/PTY gates may have markers but are mandatory in final verification; the release script must explicitly invoke them.
+P01 captures original `python -m pytest -v`, three comparison scripts and pip check. Work-unit commits use the relevant targeted/subsystem tests and Ruff/check-format; full suite, packaging/build, planning/docs and other expensive project-wide checks run primarily at phase gates. Isolated exported-wheel consumer installations run when a change can affect export/runtime behavior or an explicit phase/release gate requires them. Broaden verification when focused checks reveal cross-cutting risk. P09/P10 and final release verification still run every required check. No critical skipped/xfail tests count as a pass. Slow installation/PTY gates may have markers but are mandatory in final verification; the release script must explicitly invoke them.
 
 ## Required coverage matrix
 | Area / suggested test module | Required cases and assertions |
@@ -54,6 +54,8 @@ Add GitHub Actions jobs for Ubuntu 24.04 x86_64, Python 3.12 and 3.13:
 4. Real process tests and Pilot at both supported sizes.
 5. Isolated wheel/install/export smoke through release script, including all six model artifacts. Setup may download dependencies; the runtime phase cannot.
 No job needs credentials/data uploads. Synthetic test reports/screenshots may be CI artifacts; no private datasets.
+
+The complete CI workflow runs on pull requests or explicit workflow dispatch. Dispatch it at phase gates and when export/runtime changes require the complete matrix; ordinary focused work-unit pushes do not automatically repeat consumer installations. Record each dispatched run and exact SHA in BUILD_LOG. Local targeted verification remains required before each work-unit commit.
 
 ## Final commands (must exist by release)
 From activated project venv, repository root:
