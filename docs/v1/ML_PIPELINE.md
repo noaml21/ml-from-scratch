@@ -75,3 +75,6 @@ Try requires one input per selected feature (scrollable form), number/category/b
 
 ## P04.1.a implemented policy
 `tasks.py` exposes task labels, target/feature choices with reasons, option bounds, validated target display labels and explicit review warnings. It consumes confirmed schema statistics; it does not fit transforms, split rows or manage processes. High-cardinality/long-text inputs remain selectable only with review; incompatible mixed target kinds also require acknowledgement or explicit Category correction. Name-based leakage matching uses the exact case-insensitive names listed above, with no substring or correlation heuristic. `validate_selection` enforces the same rules headlessly; Show all changes visibility only.
+
+## P04.1.b implemented preparation
+`preprocessing.prepare_run` freezes one shared row split and policy; it validates raw inputs statelessly through `prediction.runtime.normalize_record` and does not fit anything. Numeric/categorical matrix bounds are checked before allocating the normalized matrix. Supervised test size uses exact integer ceil(n/5); classification stratifies, both supervised goals shuffle with seed 42, and unsupervised goals keep all rows. Candidate fitting/evaluation is the next unit. `raw_records` preserves selected-field order and translates only canonical missing markers to None for the shared runtime.
