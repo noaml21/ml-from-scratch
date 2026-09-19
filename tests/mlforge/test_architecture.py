@@ -253,10 +253,11 @@ import sys
 class BlockUI(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, path=None, target=None):
         if fullname.split('.')[0] in {'textual', 'rich'}:
-            raise AssertionError('Headless import loaded presentation: ' + fullname)
+            raise ModuleNotFoundError('Presentation is unavailable', name=fullname)
 sys.meta_path.insert(0, BlockUI())
 for name in sys.argv[1:]:
     importlib.import_module(name)
+assert not any(name.split('.')[0] in {'textual', 'rich'} for name in sys.modules)
 """
     result = subprocess.run(
         [sys.executable, "-c", code, *modules],

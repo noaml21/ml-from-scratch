@@ -2,18 +2,17 @@
 
 Current pointer only; history: [BUILD_LOG.md](BUILD_LOG.md). Recovery: [RESUME_PROTOCOL.md](RESUME_PROTOCOL.md).
 
-- Updated: 2026-09-19T00:40:15.514554+00:00.
+- Updated: 2026-09-19T09:58:40.967728+00:00.
 - Repository: noaml21/ml-from-scratch; local /home/noam/Projects/ml-from-scratch; branch v1/mlforge.
-- Immutable planning base: 0798b5b7d7ae07b0bd9fe454b3ddf90eba5434d5.
-- Observed HEAD and remote: 536fb0de964e294372f555e6a849e9aba7f35a07.
-- Active phase/unit: P02 / P02.1; phase IN PROGRESS; unit VERIFIED.
-- Last verified phase/code commit: P01 / 536fb0de964e294372f555e6a849e9aba7f35a07. Last completed unit: P02.1 (commit pending).
-- Completed: package/bootstrap, constraints, isolated wheel/sdist installs, CI on both supported Pythons, P01 recovery rehearsal.
-- Incomplete: P02 typed records/model factories/architecture guard, shared runtime/persistence and six-model installed export proof. P03-P10 not started.
-- Planned edit batch: src/mlforge/contracts.py, datasets/records.py, models.py, tests/mlforge/test_architecture.py and contract/model tests.
-- Uncommitted: P02.1 records/model registry/architecture guard and tests; guides/architecture/checkpoint updated.
-- Relevant owners: ARCHITECTURE, ML_PIPELINE models, EXPORT_SPEC, TEST_PLAN architecture/export, both practical guides.
-- Last check: P02.1 full suite 43 passed, Ruff check/format, build/twine, planning checker and diff check passed. P01 two-Python CI passed.
-- Next action: commit/push verified P02.1, then begin P02.2 standalone runtime and persistence.
-- Failures/repair attempts: none unresolved. Ordinary sandbox Git/network calls use approved escalation.
-- Owned operations: none.
+- Immutable planning base: 0798b5b7d7ae07b0bd9fe454b3ddf90eba5434d5; ancestry checked.
+- Observed HEAD/last pushed: 23fcd0800cb6334719c211a7529858884c40e88d.
+- Active phase/unit: P02 / P02.2; phase IN PROGRESS; unit VERIFIED locally, commit pending.
+- Last verified phase: P01 at 536fb0d; last committed unit P02.1 at 23fcd08.
+- Completed locally: standalone runtime/schema, unfitted transforms, safe fitted bundles, fixed-template wheel build/parity/publish, underscore-name repair and adversarial tests.
+- Incomplete: P02.3 real six-model clean consumer installs and CI; P03-P10 not started.
+- Uncommitted: verified prediction/export/preprocessing code/tests, pyproject resources, architecture test, canonical/practical docs and checkpoint/log. Preserve all until committed.
+- Last verification: session 87032 exit 0; 141 tests passed in 192.24s, Ruff check/format, build/twine, planning and diff checks passed. Reports .mlforge-build/pytest-p02.2.log and build-p02.2.log (local-only).
+- Known failures: none unresolved; no consumer-install proof yet.
+- Next exact action: commit/push P02.2, then add P02.3 fresh venv installs outside checkout with no-index dependencies, no MLForge/Textual, equality/API/security tests for every model.
+- Relevant owners: EXPORT_SPEC, ARCHITECTURE, TEST_PLAN export/install, IMPLEMENTATION_PLAN P02; both practical guides updated.
+- Owned running operations: none.

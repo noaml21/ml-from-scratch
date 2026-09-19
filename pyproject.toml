@@ -33,6 +33,9 @@ where = ["src"]
 include = ["mlforge*"]
 namespaces = false
 
+[tool.setuptools.package-data]
+"mlforge.export" = ["templates/*.txt"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"

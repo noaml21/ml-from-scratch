@@ -1,6 +1,6 @@
 # Extending MLForge
 
-Read [AGENTS](../AGENTS.md) first. These are practical recipes for **later authorized changes**, not extra V1 requirements. Core/dataset records and the concrete model registry are implemented alongside the bootstrap; other service/TUI paths below remain planned. [ARCHITECTURE](v1/ARCHITECTURE.md) owns dependency/contracts; [PRODUCT_SPEC](v1/PRODUCT_SPEC.md) owns scope. Keep this guide synchronized with the actual code instead of maintaining parallel interfaces here.
+Read [AGENTS](../AGENTS.md) first. These are practical recipes for **later authorized changes**, not extra V1 requirements. Core/dataset records, model registry, preprocessing builder, prediction runtime/schema and wheel exporter are implemented alongside the bootstrap; other service/TUI paths below remain planned. [ARCHITECTURE](v1/ARCHITECTURE.md) owns dependency/contracts; [PRODUCT_SPEC](v1/PRODUCT_SPEC.md) owns scope. Keep this guide synchronized with the actual code instead of maintaining parallel interfaces here.
 
 Use the existing functions, dispatch maps and records first. Keep mathematical/domain decisions out of widgets, and UI copy/layout out of core services. Update the canonical contract when public behavior or a dependency edge changes; add relevant tests and update this guide. No automatic plugin discovery, registration decorators, abstract factories or speculative interfaces.
 
@@ -44,3 +44,5 @@ A task changes product semantics across multiple **related** boundaries; promisi
 
 ## Before submitting any extension
 Run targeted tests, architecture import checks and the existing suite; use [TEST_PLAN](v1/TEST_PLAN.md) for export/process/TUI integration gates. Update canonical specs and guides only where affected. Record decisions/evidence in BUILD_LOG and next action in BUILD_STATE. If a small extension touches unrelated importers, lifecycle code and many screens, inspect the coupling before adding another abstraction. Locality means understandable responsibilities, not an arbitrary maximum file count.
+
+Current inference extension points are `normalize_record`, `load_pipeline`, `validate_tree_state`, `fitted_schema`, and `save_bundle`. Export uses `distribution_name`/`wheel_stem` independently of Python import names; changes must preserve repeated/trailing underscore regression coverage and reserved distribution checks. The exact runtime source is packaged, not maintained as a second template.
