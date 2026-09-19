@@ -27,6 +27,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: python -m pip install -e '.[dev,demos]' -c requirements/constraints-dev.txt
       - run: python -m pip check
+      - run: python scripts/verify_package.py --prepare-wheelhouse
       - run: python -m pytest -q
       - run: python -m ruff check .
       - run: python -m ruff format --check .
@@ -35,11 +36,12 @@ jobs:
       - run: python demos/kmeans_comparison.py
       - run: python demos/logistic_regression_comparison.py
       - run: python demos/pca_comparison.py
-      - run: python scripts/verify_package.py --prepare-wheelhouse
       - run: python scripts/verify_package.py
       - run: python docs/v1/verify_planning.py
       - uses: actions/upload-artifact@v4
         with:
           name: package-evidence-${{ matrix.python }}
-          path: .mlforge-build/package-*.json
+          path: |
+            .mlforge-build/package-*.json
+            .mlforge-build/consumer-*.json
           include-hidden-files: true

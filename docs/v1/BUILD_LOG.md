@@ -135,3 +135,21 @@ Current pointer: [BUILD_STATE.md](BUILD_STATE.md). This file records historical 
 - Earlier overlapping source-edit/test run correctly failed parity/source-equality checks and was discarded as verification evidence; stable full rerun passed. No weakened assertion.
 - P02.1 remote CI [35410459118](https://github.com/noaml21/ml-from-scratch/actions/runs/35410459118) also passed at 23fcd08.
 - Commit subject: feat(export): preserve shared inference and validate model wheels. P02 phase remains IN PROGRESS; P02.3 must install and infer with all six wheels in fresh consumer environments outside the checkout.
+
+- P02.2 committed and pushed normally as 294307401805071fc216a7a7375667724b1775d9. P02.3 begins with real consumer installs; verification must run outside checkout with complete dependency resolution, no app/UI packages, and a network-attempt guard.
+
+## P02.3 — clean consumer installation matrix IN PROGRESS
+- Added tests/mlforge/export/test_install.py: six actual independent venvs under pytest-owned temporary paths outside checkout, no source import path or system-site packages, pip --no-index with prepared wheels, pip check, real task API and numerical/warning parity. Uses both repeated/trailing underscore import modules.
+- Consumer asserts MLForge/Textual/Rich absent, exact inference dependency versions, no refit, input/batch/task errors, metadata copies, Python mismatch and resource hash rejection. A venv-local sitecustomize audit hook exits 93 on attempted network operations during pip or inference; no exceptions can hide attempts.
+- Updated CI preparation before full pytest and consumer evidence artifact paths. Documentation explains missing wheelhouse is a failure, not a skip.
+- Long verification: `.venv/bin/python -m pytest -q tests/mlforge/export/test_install.py` running as session 65608; output .mlforge-build/install-p02.3.log; result UNKNOWN until collected. No P02 phase completion claimed.
+
+## P02.3 continuation reconciliation
+- Re-read AGENTS/RESUME_PROTOCOL and inspected Git/checkpoint/log on user continuation. HEAD remains 294307401805071fc216a7a7375667724b1775d9 on v1/mlforge; no staged changes. Preserve install test, CI/docs/checkpoint edits and newly observed unrelated untracked CLAUDE.md.
+- Prior session 65608 is unavailable after tool-runtime reset; saved log ends `6 passed in 119.63s`, and all six consumer evidence JSON files exist. This is positive test evidence but no recoverable process return code. Full required suite will rerun with durable recorded return codes; no inference of phase completion from the missing process.
+
+## P02.3 — local consumer gate VERIFIED; CI pending
+- Collected session 27826 exit 0 and durable per-command return codes in .mlforge-build/checks-p02.3.json. Full pytest: 147 passed in 367.06s; Ruff check/format, build --no-isolation, twine check, pip check, verify_planning.py and git diff --check all passed. Six consumer-12-*.json reports confirm isolated installation and task inference with no app/UI dependencies or network attempts.
+- P02.2 CI [35436143083](https://github.com/noaml21/ml-from-scratch/actions/runs/35436143083) passed for both supported Python versions. New P02.3 tests still require their own CI evidence.
+- Reviewed test, workflow, prerequisite docs and diff. Replaced stale checkpoint with actual current pointer; historical pre-implementation evidence remains solely in BUILD_LOG. Preserved external untracked CLAUDE.md unchanged.
+- Next: commit test/export installation matrix and documentation, push normally, verify both CI jobs before P03. No full V1 acceptance claim.

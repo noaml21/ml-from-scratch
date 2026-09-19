@@ -92,3 +92,6 @@ For A28, include table and modal overflow, focused-and-checked versus checked-on
 For A27, the recovery fixture must include both staged and unstaged partial edits plus a relevant untracked file, stale BUILD_STATE, and BUILD_LOG history. Check that the reconstructed next action matches IMPLEMENTATION_PLAN, the history is retained, and immutable planning ancestry is preserved.
 
 Planning documentation sanity check: `python3 docs/v1/verify_planning.py` plus `git diff --check`. This checks structural invariants and local links, not semantic truth or V1 acceptance; retain the manual cross-document review.
+
+## P02.3 installation prerequisites
+The ordinary suite includes `tests/mlforge/export/test_install.py` for every model. Before running it on a fresh checkout, run `python scripts/verify_package.py --prepare-wheelhouse` once to obtain the committed runtime wheels. Tests then install with --no-index into independent venvs outside the checkout, with MLForge/Textual/Rich absent and a sitecustomize audit hook that exits on any network attempt (including in pip). No install test silently skips missing wheels. CI prepares the wheelhouse before pytest. Per-model synthetic evidence is saved under ignored `.mlforge-build/consumer-*.json`; these installation checks do not replace the later installed-TUI or release verifier gates.

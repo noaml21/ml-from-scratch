@@ -20,6 +20,7 @@ python -m venv .venv
 source .venv/bin/activate
 python -m pip install -e '.[dev,demos]' -c requirements/constraints-dev.txt
 mlforge --help
+python scripts/verify_package.py --prepare-wheelhouse
 python -m pytest -q
 ```
 
@@ -32,7 +33,9 @@ python scripts/verify_package.py --prepare-wheelhouse
 python scripts/verify_package.py
 ```
 
-This is packaging evidence only; it does not verify the planned model exports or TUI.
+The package verifier checks app packaging. The ordinary test suite also includes
+six real exported-model consumer installations and requires the prepared local
+wheelhouse; missing prerequisites fail explicitly. The TUI is not yet implemented.
 
 ## Overview
 
