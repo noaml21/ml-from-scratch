@@ -1,6 +1,7 @@
 # MLForge V1 specification index
 
-Status: implementation-ready planning; production V1 has not been built.
+Status: implementation in progress on v1/mlforge; V1 is not release verified.
+See BUILD_STATE.md for the current checkpoint.
 Planning date: 2026-09-18. All prose below this directory is in English so subsequent implementers and reviewers need no chat context.
 
 Start with REPOSITORY_AUDIT.md for what actually exists. Then read PRODUCT_SPEC.md and every canonical document in the table. CODEX_EXECUTION.md controls autonomous execution, not product behavior.

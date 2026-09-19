@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=82,<83", "wheel>=0.48,<0.49"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mlforge"
+version = "0.1.0"
+description = "A local terminal workbench for small tabular machine learning"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "numpy>=2.5,<2.6",
+    "scipy>=1.18,<1.19",
+    "scikit-learn>=1.9,<1.10",
+    "textual>=8.2,<9",
+    "skops>=0.15,<0.16",
+    "threadpoolctl>=3.7,<4",
+    "packaging>=26,<27",
+    "build>=1.6,<2",
+    "setuptools>=82,<83",
+    "wheel>=0.48,<0.49",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=9.1,<10", "pytest-asyncio>=1,<2", "ruff>=0.15,<1", "twine>=6,<7"]
+demos = ["matplotlib>=3.11,<3.12"]
+
+[project.scripts]
+mlforge = "mlforge.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["mlforge*"]
+namespaces = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "install: isolated installation checks",
+    "pty: real terminal checks",
+    "slow: required long-running integration checks",
+]
+
+[tool.ruff]
+target-version = "py312"
+extend-exclude = ["src/kmeans.py", "src/logistic_regression.py", "src/pca.py", "demos", "tests/test_kmeans.py", "tests/test_logistic_regression.py", "tests/test_pca.py", "docs/v1/verify_planning.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

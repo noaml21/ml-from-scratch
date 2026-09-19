@@ -1,6 +1,6 @@
 # How MLForge works
 
-Planning walkthrough, not a claim that V1 exists. Start with [AGENTS](../AGENTS.md); the authoritative boundaries are in [ARCHITECTURE](v1/ARCHITECTURE.md). During implementation keep these planned paths aligned with real files.
+Implementation walkthrough: only packaging/bootstrap currently exists; the service/TUI flow below remains planned. Start with [AGENTS](../AGENTS.md); the authoritative boundaries are in [ARCHITECTURE](v1/ARCHITECTURE.md). During implementation keep these planned paths aligned with real files.
 
 MLForge turns a small local table into a tested model and a reusable Python package, entirely through a terminal application. [PRODUCT_SPEC](v1/PRODUCT_SPEC.md) defines the four tasks and deliberately small scope. The original NumPy algorithms remain the educational track alongside the new workbench.
 

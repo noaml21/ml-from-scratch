@@ -1,21 +1,19 @@
 # Current resumable build state
 
-This is the only current implementation pointer. Historical evidence belongs in [BUILD_LOG.md](BUILD_LOG.md); update rules and recovery belong in [RESUME_PROTOCOL.md](RESUME_PROTOCOL.md). Observations are snapshots, not claims about the checkout at a later time.
+Current pointer only; history: [BUILD_LOG.md](BUILD_LOG.md). Recovery: [RESUME_PROTOCOL.md](RESUME_PROTOCOL.md).
 
-- Updated: 2026-09-18T17:53:57+00:00; architecture review, implementation NOT STARTED.
-- Repository: noaml21/ml-from-scratch; observed local checkout /home/noam/Projects/ml-from-scratch.
-- Observed branch: planning/mlforge-v1. Implementation branch: v1/mlforge.
-- Planning base: UNSET until P01.1; record the exact verified planning SHA supplied in the launch instruction. Never use the original planning commit merely because it appears in history.
-- Observed HEAD before this refinement: 87a7d83d660ecb3f0267719667403859ced8b53c. Obtain delivery tip from Git; this document cannot contain its own commit SHA.
-- Current phase / unit: P01 / P01.1; phase NOT STARTED; unit NOT STARTED.
-- Last verified implementation phase / unit / commit: none.
-- Last verification: `python3 docs/v1/verify_planning.py` passed (22 Markdown files, 10 phases, 30 units, 28 mapped IDs, 21 palette pairs); `git diff --check` passed. Baseline `PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest -q -p no:cacheprovider`, repository cwd, Python 3.12, exit 0, 15 passed. No V1 verification. Baseline evidence: BUILD_LOG planning recovery; current planning evidence: architecture review entry.
-- Completed in current phase: none; original educational code and planning documents exist.
-- Incomplete: all P01 foundation work and remaining implementation phases.
-- Known partial/uncommitted production work: none at recovery inspection; staged, unstaged and untracked inventories were empty. Planning documentation changes after that inspection must be reconciled from Git.
-- Blockers / serious repair attempts: none / 0 for implementation.
-- Next exact action: read the initial canonical specification set and both practical guides, inspect Git refs/status/diffs and the supplied planning SHA, then create or continue v1/mlforge under CODEX_EXECUTION; record ancestry and run P01.1 baseline before packaging edits.
-- Relevant specifications: AGENTS, CODEX_EXECUTION, RESUME_PROTOCOL, IMPLEMENTATION_PLAN P01 and its reading map. Initial onboarding reads all canonical specifications.
-- Checks to rerun: baseline pytest command above; P01 comparisons and environment checks before phase completion; planning checker after any planning-doc change.
-- Owned running operations: none known; inspect before assuming no prior operation survived.
-- Remote observation before architecture review: origin/planning/mlforge-v1 matched approved 87a7d83d660ecb3f0267719667403859ced8b53c. This is historical delivery state, not the final remote claim: inspect live refs before starting.
+- Updated: 2026-09-19T00:29:47.767428+00:00.
+- Repository: noaml21/ml-from-scratch; local /home/noam/Projects/ml-from-scratch.
+- Branch: v1/mlforge; immutable planning base: 0798b5b7d7ae07b0bd9fe454b3ddf90eba5434d5.
+- Observed HEAD: 0798b5b7d7ae07b0bd9fe454b3ddf90eba5434d5.
+- Active phase/unit: P01 / P01.3; phase IN PROGRESS; unit EDITING.
+- Last verified phase/code commit: none. Last completed unit: P01.2 (local checks passed; commit pending).
+- Completed: all canonical specifications and practical guides read; clean local/remote planning SHA verified; dedicated branch created.
+- Incomplete: two-Python CI; continuation rehearsal passed; P02-P10 not started.
+- Uncommitted: locally checked foundation batch in pyproject.toml, src/mlforge, tests/mlforge, requirements constraints, CI, README and build evidence.
+- Relevant specifications: IMPLEMENTATION_PLAN P01, ARCHITECTURE dependencies, TEST_PLAN baseline, CODEX_EXECUTION.
+- Last check: .venv/bin/python -m pytest -q (18 passed), Ruff check/format, pip check, planning checker and git diff --check all exit 0. Dependencies/constraints resolved; offline wheel and sdist-derived installs passed, including corrected manifest.
+- Next action: commit/push locally verified foundation and inspect both GitHub Actions matrix jobs; P01.3 stays unverified until both pass.
+- Failures/repairs: sandbox network and .git writes unavailable; approved escalated calls succeeded. No unresolved failure.
+- Owned operations: none; final build/check session completed exit 0.
+- Remote: planning verified at base; v1/mlforge not yet pushed.

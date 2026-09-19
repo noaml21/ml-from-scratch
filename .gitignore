@@ -3,6 +3,11 @@ reference/
 __pycache__/
 *.pyc
 .pytest_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+.mlforge-build/
 
 .vscode/
 

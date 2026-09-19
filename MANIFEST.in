@@ -1,0 +1,8 @@
+include AGENTS.md requirements.txt
+include src/kmeans.py src/logistic_regression.py src/pca.py
+recursive-include requirements *.txt
+recursive-include scripts *.py
+recursive-include tests *.py
+recursive-include demos *.py
+recursive-include assets *.png
+recursive-include docs *.md *.py

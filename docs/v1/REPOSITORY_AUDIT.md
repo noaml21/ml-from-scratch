@@ -58,3 +58,6 @@ Consulted during planning (2026-09-18); pin actual implementation dependencies, 
 - [Python subprocess](https://docs.python.org/3/library/subprocess.html): child ownership and process APIs.
 
 These links support library facts; product limits and choices in the specifications are MLForge design decisions.
+
+## P01 implementation additions (2026-09-19)
+The original baseline above remains historical evidence. The implementation branch adds explicit setuptools packaging, noninteractive command bootstrap, dependency constraints, bootstrap tests, isolated package verification and a two-Python CI workflow. All original algorithm/test/demo/asset files remain unchanged. V1 services and TUI are not yet implemented; current evidence belongs in BUILD_LOG and BUILD_STATE.

@@ -72,3 +72,28 @@ Current pointer: [BUILD_STATE.md](BUILD_STATE.md). This file records historical 
 - Commit subject: docs: clarify architecture boundaries and extension workflows.
 - Verification: `python3 docs/v1/verify_planning.py` → PASS, 22 Markdown files including both guides, local links/fences, 10 phases, 30 units, 28 acceptance mappings, 21 palette pairs; `git diff --check` → pass.
 - `PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest -q -p no:cacheprovider` → exit 0, 15 passed. Scoped Git diff of src/tests/demos/assets/requirements.txt against both approved 87a7d83 and baseline 93272b was empty. Reviewed new guides, final architecture and all affected documentation for consistency. No product code or new architecture test was implemented.
+
+## P01.1 — baseline and branch verified (2026-09-19)
+- Started from clean planning/mlforge-v1 at 0798b5b7d7ae07b0bd9fe454b3ddf90eba5434d5. All canonical specifications and both practical guides read before coding.
+- Remote ls-remote confirms that exact planning SHA and no existing implementation branch. Created v1/mlforge at the supplied base; main untouched.
+- Ubuntu 24.04.5 x86_64, CPython 3.12.3: `.venv/bin/python -m pytest -v` → 15 passed; `.venv/bin/python -m pip check` → no broken requirements.
+- `.venv/bin/python demos/kmeans_comparison.py`, `demos/logistic_regression_comparison.py`, `demos/pca_comparison.py` → all exit 0; cost 47.699582, test accuracy 0.9200, reconstruction MSE 0.00407484 match sklearn.
+- Sandbox DNS/.git writes required approved escalation; both succeeded. No production changes in this unit. A01 ancestry and A02 baseline evidence only; P01 phase remains in progress.
+- Next unit P01.2: package metadata/bootstrap, constrained dependencies and installed namespace checks.
+
+## P01.2 — packaging foundation locally verified (2026-09-19)
+- Started from planning base 0798b5b7d7ae07b0bd9fe454b3ddf90eba5434d5 on v1/mlforge; no prior implementation.
+- Added pyproject.toml, MANIFEST.in, src/mlforge/{__init__,__main__}.py, tests/mlforge/test_bootstrap.py, runtime/dev constraints, scripts/verify_package.py and .github/workflows/verify.yml. Updated .gitignore, README, canonical architecture/audit/index and both practical guides with honest implementation status. No TUI/services claimed.
+- Resolved 24 runtime and 60 development/demo dependency pins from installed distribution metadata and transitive requirements (including extras and both Python markers); core versions: NumPy 2.5.3, SciPy 1.18.1, sklearn 1.9.1, skops 0.15.0, Textual 8.2.8, setuptools 82.0.1. No license grant or publication.
+- `.venv/bin/python -m pip install --no-cache-dir -e '.[dev,demos]'` → exit 0 after approved project-local dependency installation. Reinstalled with constraints, --no-index, prepared wheelhouse and --no-build-isolation → exit 0.
+- `.venv/bin/python -m pytest -q` → 18 passed; Ruff check/format, pip check, planning checker and git diff --check → pass. Bootstrap is exercised in fresh subprocesses with Textual/Rich explicitly blocked.
+- `.venv/bin/python scripts/verify_package.py --prepare-wheelhouse` → exit 0 (setup network); ordinary verifier → exit 0 with indexes disabled: wheel and sdist-derived isolated installs, entrypoints, package namespace location, pip check. Local-only report `.mlforge-build/package-3.12.json`; no Python 3.13 claim yet.
+- Build and twine metadata checks passed. Manifest review found baseline tests in sdist without their educational source; added explicit manifest inclusions and repeated both isolated installs successfully. Scoped legacy source/test/demo/asset/requirements diff is empty.
+- Formatting issues on first generated batch repaired using scoped Ruff formatting; subsequent checks pass. An overlapping repeat of isolated verification used separate owned temporary environments; both completed successfully. No operations remain from those checks.
+- Commit subject: build: establish MLForge package and preserve educational baseline (SHA recorded next checkpoint). P01 remains IN PROGRESS pending CI and continuation rehearsal; A03/A24 release acceptance is not complete.
+
+## P01.3 — CI baseline and recovery rehearsal in progress
+- GitHub Actions permissions API reports enabled/all actions allowed. Workflow targets Ubuntu 24.04 x86_64 and Python 3.12/3.13, full suite/lint/build/metadata/comparisons plus isolated app installations. Remote job results remain pending.
+- Reconstructed P01.3 and completed P01.2 from BUILD_STATE, IMPLEMENTATION_PLAN and Git alone; confirmed immutable planning ancestry. SHA-256 before/after checks preserve dirty checkpoint/log/bootstrap/manifest/package files. Next action correctly remains commit/push then two-Python CI, not P02. Local-only evidence: `.mlforge-build/recovery-p01.json`. P09 must still test the richer synthetic recovery cases.
+- Final local foundation verification: `PIP_NO_INDEX=1 PIP_FIND_LINKS="$PWD/.mlforge-build/wheelhouse" .venv/bin/python -m build` → exit 0 (isolated backend resolved offline); twine both artifacts passed; full pytest 18 passed; Ruff check/format passed. Local-only build output `.mlforge-build/build.log`.
+- P01.1/P01.2 local gates and P01 continuation rehearsal pass. P01.3 awaits both CI results and cannot yet advance.

@@ -2,15 +2,37 @@
 
 NumPy implementations of core machine learning algorithms, with tests, visual experiments, and comparisons against scikit-learn.
 
-## MLForge V1 planning
+## MLForge V1 implementation
 
 The next product is MLForge, a local-first full-screen terminal ML workbench.
 Its authoritative plan starts at [docs/v1/README.md](docs/v1/README.md).
 Read [How it works](docs/HOW_IT_WORKS.md) for the system flow and
 [Extending MLForge](docs/EXTENDING_MLFORGE.md) for practical change locations.
-This planning branch contains specifications only; the `mlforge` application
-has not been implemented yet. The educational algorithms and instructions below
-describe the existing baseline and remain supported.
+The `v1/mlforge` branch is under construction. Packaging and noninteractive
+`mlforge --help` / `mlforge --version` are implemented; the full terminal workflow
+is not ready. Current progress and verification are in
+[BUILD_STATE](docs/v1/BUILD_STATE.md). The educational algorithms below remain supported.
+
+Development setup (CPython 3.12 or 3.13 on Ubuntu 24.04 x86_64):
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[dev,demos]' -c requirements/constraints-dev.txt
+mlforge --help
+python -m pytest -q
+```
+
+Exact runtime and development/demo constraints live in `requirements/`.
+Clean installation verification prepares dependencies explicitly, then checks
+wheel and sdist-derived installations with package-index access disabled:
+
+```bash
+python scripts/verify_package.py --prepare-wheelhouse
+python scripts/verify_package.py
+```
+
+This is packaging evidence only; it does not verify the planned model exports or TUI.
 
 ## Overview
 
@@ -40,7 +62,7 @@ The PCA implementation centers the data, computes its covariance matrix, obtains
 
 ## Validation
 
-The project contains 15 automated pytest tests covering core behavior, reproducibility, learned values, error handling, and reconstruction. Each implementation is also compared against scikit-learn on the same data:
+The educational track retains 15 automated pytest tests covering core behavior, reproducibility, learned values, error handling, and reconstruction. Each implementation is also compared against scikit-learn on the same data:
 
 - K-Means reached the same centroids and objective on the comparison dataset.
 - Logistic Regression achieved the same training and test accuracy with very similar learned parameters.
@@ -59,7 +81,8 @@ assets/   Images used in this README
 
 ## Installation
 
-Tested with Python 3.13.
+The educational baseline has been verified locally on CPython 3.12.3.
+MLForge targets CPython 3.12 and 3.13; both are required CI gates.
 
 Create a virtual environment:
 
