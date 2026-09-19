@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import BinaryIO
 
-from mlforge.contracts import DomainError
+from mlforge.contracts import DomainError, TaskKind
 from mlforge.datasets.records import Cell, Column, SourceKind, TabularDataset
 
 MAX_BYTES = 20 * 1024 * 1024
@@ -36,6 +36,22 @@ FORMATS = (
     Format(".jsonl", "JSONL", None),
 )
 BY_EXTENSION = {item.extension: item for item in FORMATS}
+
+
+@dataclass(frozen=True)
+class Example:
+    filename: str
+    label: str
+    task: TaskKind
+
+
+EXAMPLES = (
+    Example("classification.csv", "Two synthetic outcomes", TaskKind.CLASSIFICATION),
+    Example("regression.tsv", "Synthetic measurements", TaskKind.REGRESSION),
+    Example("clustering.csv", "Three synthetic groups", TaskKind.CLUSTERING),
+    Example("reduction.jsonl", "Related synthetic measurements", TaskKind.REDUCTION),
+    Example("mixed.csv", "Mixed types and missing values", TaskKind.CLASSIFICATION),
+)
 
 
 def _error(code: str, message: str, line: int | None = None) -> DomainError:

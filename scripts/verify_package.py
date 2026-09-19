@@ -117,10 +117,33 @@ def verify(wheelhouse):
                 env=env,
             )
             assert str(venv) in location, location
+            examples = run(
+                [
+                    python,
+                    "-I",
+                    "-c",
+                    """
+from importlib import resources
+from mlforge.datasets.importers import EXAMPLES, load_dataset
+from mlforge.datasets.inference import infer_schema
+assert len(EXAMPLES) == 5
+for example in EXAMPLES:
+    resource = resources.files('mlforge').joinpath('examples', example.filename)
+    with resources.as_file(resource) as path:
+        table = load_dataset(path)
+    assert len(table.rows) >= 60
+    assert len(infer_schema(table).columns) == len(table.columns)
+print('5 packaged examples parsed and inferred')
+""",
+                ],
+                cwd=root,
+                env=env,
+            )
             evidence["installations"].append(
                 {
                     "kind": kind,
                     "status": "passed",
+                    "examples": examples,
                     "pip_check": run([python, "-m", "pip", "check"], cwd=root, env=env),
                     "versions": run(
                         [python, "-m", "pip", "list", "--format=json"],

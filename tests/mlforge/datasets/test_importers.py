@@ -229,3 +229,29 @@ def test_real_row_limit_and_multiline_error_location(tmp_path):
         load_dataset(path)
     assert caught.value.code == "ROW_WIDTH"
     assert caught.value.row == 4
+
+
+def test_changes_during_read_refused(tmp_path, monkeypatch):
+    path = write(tmp_path, "x\n1\n")
+    original_lines = importers._lines
+
+    def changed_lines(stream):
+        yield from original_lines(stream)
+        with path.open("a") as output:
+            output.write("2\n")
+
+    monkeypatch.setattr(importers, "_lines", changed_lines)
+    with pytest.raises(DomainError) as caught:
+        load_dataset(path)
+    assert caught.value.code == "FILE_CHANGED"
+
+
+def test_exact_maximum_columns_headers_and_escaped_quotes(tmp_path):
+    import csv
+
+    stream = io.StringIO(newline="")
+    writer = csv.writer(stream)
+    writer.writerow(["a" * 128] + [f"c{i}" for i in range(99)])
+    writer.writerow(['"' * 4096] + [""] * 99)
+    data = load_dataset(write(tmp_path, stream.getvalue()))
+    assert len(data.columns) == 100 and data.rows[0][0].raw_text == '"' * 4096

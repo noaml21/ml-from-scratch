@@ -55,7 +55,7 @@ Add GitHub Actions jobs for Ubuntu 24.04 x86_64, Python 3.12 and 3.13:
 5. Isolated wheel/install/export smoke through release script, including all six model artifacts. Setup may download dependencies; the runtime phase cannot.
 No job needs credentials/data uploads. Synthetic test reports/screenshots may be CI artifacts; no private datasets.
 
-The complete CI workflow runs on pull requests or explicit workflow dispatch. Dispatch it at phase gates and when export/runtime changes require the complete matrix; ordinary focused work-unit pushes do not automatically repeat consumer installations. Record each dispatched run and exact SHA in BUILD_LOG. Local targeted verification remains required before each work-unit commit.
+The complete CI workflow runs on pull requests or explicit workflow dispatch. Dispatch it at phase gates and when export/runtime changes require the complete matrix; ordinary focused work-unit pushes do not automatically repeat consumer installations. Record each dispatched run and exact SHA in BUILD_LOG. Local targeted verification remains required before each work-unit commit. For a dataset-only phase gate, dispatch with consumer_installs=false to run the complete non-consumer suite plus app packaging; keep its true default for export/runtime and P09/P10 gates. Report deselected consumer tests explicitly, never as a complete consumer pass.
 
 ## Final commands (must exist by release)
 From activated project venv, repository root:
