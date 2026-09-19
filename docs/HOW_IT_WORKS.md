@@ -1,6 +1,6 @@
 # How MLForge works
 
-Implementation walkthrough: packaging/bootstrap, core/dataset records, model factories, shared inference, unfitted transforms and wheel export exist; canonical data training, orchestration and TUI flow below remain planned. Start with [AGENTS](../AGENTS.md); the authoritative boundaries are in [ARCHITECTURE](v1/ARCHITECTURE.md). The six synthetic model exports also pass real isolated consumer installations; application/Try integration remains planned. During implementation keep these planned paths aligned with real files.
+Implementation walkthrough: packaging/bootstrap, core/dataset records, model factories, shared inference, unfitted transforms and wheel export exist; bounded local importers now preserve canonical lexical cells; type inference, training, orchestration and TUI flow below remain planned. Start with [AGENTS](../AGENTS.md); the authoritative boundaries are in [ARCHITECTURE](v1/ARCHITECTURE.md). The six synthetic model exports also pass real isolated consumer installations; application/Try integration remains planned. During implementation keep these planned paths aligned with real files.
 
 MLForge turns a small local table into a tested model and a reusable Python package, entirely through a terminal application. [PRODUCT_SPEC](v1/PRODUCT_SPEC.md) defines the four tasks and deliberately small scope. The original NumPy algorithms remain the educational track alongside the new workbench.
 

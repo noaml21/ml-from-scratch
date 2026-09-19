@@ -153,3 +153,17 @@ Current pointer: [BUILD_STATE.md](BUILD_STATE.md). This file records historical 
 - P02.2 CI [35436143083](https://github.com/noaml21/ml-from-scratch/actions/runs/35436143083) passed for both supported Python versions. New P02.3 tests still require their own CI evidence.
 - Reviewed test, workflow, prerequisite docs and diff. Replaced stale checkpoint with actual current pointer; historical pre-implementation evidence remains solely in BUILD_LOG. Preserved external untracked CLAUDE.md unchanged.
 - Next: commit test/export installation matrix and documentation, push normally, verify both CI jobs before P03. No full V1 acceptance claim.
+
+- P02.3 committed/pushed as 67c36cd31cd3166528f344b2c55067280cf1f6d1. CI [35450096351](https://github.com/noaml21/ml-from-scratch/actions/runs/35450096351) running at that SHA; local-only checkpoint records pending gate.
+
+## P02 VERIFIED / P03.1 started
+- CI [35450096351](https://github.com/noaml21/ml-from-scratch/actions/runs/35450096351) completed successfully for Python 3.12 and 3.13 at 67c36cd31cd3166528f344b2c55067280cf1f6d1. Both run all six real isolated consumer installations, full suite, lint/build, original comparisons and app installation checks. P02 phase gate passes.
+- P03.1 scope: bounded regular-file reads with identity checking, strict CSV/TSV/JSONL, immutable lexical cells, provenance and safe structural errors. Use existing records and no new dependencies. Targeted check: datasets importer matrix plus architecture guard. P03.2 inference/overrides/Prepare and P03.3 examples remain unwritten.
+
+## P03.1 — bounded importers present, full verification pending
+- Added datasets/importers.py and tests/mlforge/datasets/test_importers.py. Frozen format descriptors and explicit dispatch; regular-file/symlink identity checks with nonblocking/no-follow open; stat plus streaming byte bounds; strict quoting and column/cell/row/header bounds; safe UTF-8/JSON errors; immutable lexical cells and content/parser fingerprint.
+- Explicit quote grammar supplements csv.reader(strict=True), which accepts quotes inside unquoted fields. JSON numeric parse hooks retain lexical tokens and reject nonfinite float64 values. No file paths are retained by dataset records or exported provenance.
+- Targeted importer/architecture checks: 58 passed (session 46729 exit 0); Ruff check passed. Actual 20,000-row boundary, growth after stat, open identity races, permissions, FIFOs/devices, multiline locations and unchanged source bytes covered. Initial long fixture strings needed formatting repair; no runtime test failed.
+- Starting full pytest/lint/format/build/pip/docs/diff checks; durable statuses .mlforge-build/checks-p03.1.json. P03.2/P03.3 remain incomplete.
+
+- P03.1 full verification session 57006 completed exit 0: 188 passed in 408.06s; Ruff check/format, build/twine, pip check, planning checker and diff check all passed. Durable per-command evidence .mlforge-build/checks-p03.1.json. Reviewed importer/test/doc paths; commit subject: feat(data): add bounded canonical importers. Phase remains in progress; next unit P03.2.
