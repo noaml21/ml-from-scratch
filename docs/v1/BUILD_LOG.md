@@ -191,3 +191,15 @@ Current pointer: [BUILD_STATE.md](BUILD_STATE.md). This file records historical 
 
 - P03.3 local phase gate session 85301 exit 0: 220 tests passed, six isolated model-consumer tests intentionally deselected under the user cadence; Ruff check/format, build/twine, pip check, planning checker, diff check and isolated app wheel/sdist installs passed. Both installed app variants parsed/inferred all five packaged resources. Evidence .mlforge-build/checks-p03-gate.json, p03-gate-*.log, package-3.12.json.
 - Reviewed descriptors, generation formulas/resources, tests, packaging/verifier and cadence docs. Commit subject: feat(data): ship verified synthetic example datasets. P03 remains in progress until both supported CI jobs pass at this candidate; next action explicit workflow dispatch with consumer_installs=false.
+
+- P03.3 committed/pushed as c2e395a6dc24d0248cd76c7816eddfeca4221f9b. Explicit CI [35465790338](https://github.com/noaml21/ml-from-scratch/actions/runs/35465790338) running with consumer_installs=false; no phase completion inferred from dispatch. External CLAUDE.md preserved untracked.
+
+## P03 VERIFIED / P04.1.a starts
+- CI [35465790338](https://github.com/noaml21/ml-from-scratch/actions/runs/35465790338) completed successfully on Python 3.12 and 3.13 at c2e395a6dc24d0248cd76c7816eddfeca4221f9b. Both run complete non-consumer tests, lint/build/metadata/comparisons, installed app wheel/sdist examples and docs checks. Model-consumer exclusions are intentional per cadence; prior P02 proof remains intact. P03 phase gate passes.
+- Split P04.1 into P04.1.a task/target/feature eligibility and leakage warnings, then P04.1.b shared split and preparation plan. P04.2 fits transforms/model gates; P04.3 evaluates/persists candidates. First scope: tasks.py and tests/mlforge/pipeline/test_eligibility.py, using existing schema statistics and contracts; no dependency-edge change. Focused tests/Ruff before commit, broad gate later.
+
+## P04.1.a VERIFIED — eligibility and review policy
+- Added tasks.py with immutable task/choice/warning descriptors, target eligibility and stable labels, suggested/all-column views, feature defaults/exclusions, unsupervised option bounds, duplicate/equality/name warnings and explicit acknowledgement validation. Uses only permitted contracts/dataset records. Numeric classification label conversion refuses nonintegral input rather than silently truncating.
+- Added pipeline/test_eligibility.py: row/class/type/missing boundaries, no all-column bypass, Category override and label semantics, disabled/default features, k/PCA bounds, target exclusion, warning acknowledgement, mixed target correction and high-cardinality/long-text behavior.
+- Focused eligibility + datasets + architecture run session 22158: 115 passed; scoped Ruff check/format passed. Repaired only initial long-string/import formatting; no failing runtime test. Under user cadence no consumer/full-build rerun.
+- Review complete; commit subject: feat(ml): validate task targets and feature selections. Next P04.1.b shared deterministic split and preparation plan; fitting/evaluation remain incomplete.
