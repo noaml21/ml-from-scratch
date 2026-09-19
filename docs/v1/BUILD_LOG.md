@@ -97,3 +97,17 @@ Current pointer: [BUILD_STATE.md](BUILD_STATE.md). This file records historical 
 - Reconstructed P01.3 and completed P01.2 from BUILD_STATE, IMPLEMENTATION_PLAN and Git alone; confirmed immutable planning ancestry. SHA-256 before/after checks preserve dirty checkpoint/log/bootstrap/manifest/package files. Next action correctly remains commit/push then two-Python CI, not P02. Local-only evidence: `.mlforge-build/recovery-p01.json`. P09 must still test the richer synthetic recovery cases.
 - Final local foundation verification: `PIP_NO_INDEX=1 PIP_FIND_LINKS="$PWD/.mlforge-build/wheelhouse" .venv/bin/python -m build` → exit 0 (isolated backend resolved offline); twine both artifacts passed; full pytest 18 passed; Ruff check/format passed. Local-only build output `.mlforge-build/build.log`.
 - P01.1/P01.2 local gates and P01 continuation rehearsal pass. P01.3 awaits both CI results and cannot yet advance.
+
+- Foundation commit: 536fb0de964e294372f555e6a849e9aba7f35a07; normal push to origin/v1/mlforge succeeded. CI [35410007123](https://github.com/noaml21/ml-from-scratch/actions/runs/35410007123) queued for that exact SHA. No phase gate inferred from queue status.
+
+## P01 — VERIFIED / P02.1 started
+- CI run [35410007123](https://github.com/noaml21/ml-from-scratch/actions/runs/35410007123) completed successfully for both Python 3.12 and 3.13 on Ubuntu 24.04 at 536fb0de964e294372f555e6a849e9aba7f35a07. Both jobs passed suite, lint/format, dependency check, build/twine, original comparisons, isolated wheel/sdist installations and planning checker. P01 phase gate passes.
+- P02.1 first batch: immutable dataset/core records, concrete six-model registry and stdlib AST dependency/cycle guard with positive/negative fixtures. P02.2/P02.3 will implement shared runtime/persistence and independently installed six-model wheels; no such evidence exists yet.
+
+## P02.1 — typed records, factories and architecture guard VERIFIED
+- Started from 536fb0de964e294372f555e6a849e9aba7f35a07 after both P01 CI jobs passed. Added contracts.py, datasets/records.py, models.py and tests/mlforge/test_{architecture,contracts}.py; updated canonical architecture and practical guides.
+- Dataset nested input sequences are copied into tuples; experiment structural checks reject target inclusion, duplicate/empty features/models and task/target mismatch. Parent bundle records contain immutable metadata strings/hashes, not estimators. Six model factories import sklearn lazily and use ML_PIPELINE defaults.
+- Stdlib AST guard tests absolute/relative/nested/type-only edges, initializer reexports, cycles, standalone runtime direction, UI bypass, direct presentation imports and dynamic/star imports (including aliases). Fresh subprocess headless imports include all present non-TUI modules.
+- `.venv/bin/python -m pytest -q` → 43 passed; Ruff check/format → pass; `.venv/bin/python -m build --no-isolation` and twine → pass; planning checker and git diff --check → pass. Build evidence local-only `.mlforge-build/build-p02.1.log`.
+- Initial default test incorrectly required PCA.random_state=42 despite specified deterministic full SVD; corrected the test to the canonical PCA configuration. No estimator default changed. Formatting repaired before commit.
+- Commit subject: feat(core): define task and prediction contracts. Unit passes; P02 phase remains in progress. Next: P02.2 shared standalone runtime, schema/persistence and wheel exporter; P02.3 must prove all six installed roundtrips before P03.

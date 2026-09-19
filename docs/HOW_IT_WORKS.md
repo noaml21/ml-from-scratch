@@ -1,6 +1,6 @@
 # How MLForge works
 
-Implementation walkthrough: only packaging/bootstrap currently exists; the service/TUI flow below remains planned. Start with [AGENTS](../AGENTS.md); the authoritative boundaries are in [ARCHITECTURE](v1/ARCHITECTURE.md). During implementation keep these planned paths aligned with real files.
+Implementation walkthrough: packaging/bootstrap, immutable core/dataset records and six model factories exist; the service/TUI flow below remains planned. Start with [AGENTS](../AGENTS.md); the authoritative boundaries are in [ARCHITECTURE](v1/ARCHITECTURE.md). During implementation keep these planned paths aligned with real files.
 
 MLForge turns a small local table into a tested model and a reusable Python package, entirely through a terminal application. [PRODUCT_SPEC](v1/PRODUCT_SPEC.md) defines the four tasks and deliberately small scope. The original NumPy algorithms remain the educational track alongside the new workbench.
 
@@ -60,3 +60,5 @@ The application runs without network access. Sensitive intermediate files remain
 | How does development resume? | [BUILD_STATE](v1/BUILD_STATE.md) and [RESUME_PROTOCOL](v1/RESUME_PROTOCOL.md) |
 
 This is explainable engineering: data records make boundaries testable, revisions prevent stale state, processes make cancellation real, and one runtime prevents prediction drift. The design needs no plugin platform or enterprise framework to achieve those properties.
+
+Implemented P02 records live in `src/mlforge/contracts.py` and `datasets/records.py`; model descriptions/factories live in `models.py`. Parent-facing ModelBundle uses an opaque directory plus immutable JSON metadata/hashes; it never exposes a fitted estimator. The AST guard in `tests/mlforge/test_architecture.py` enforces imports for modules present so far and fresh headless imports. Future services in the diagrams are not yet implemented.
