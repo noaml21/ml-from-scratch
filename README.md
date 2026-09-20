@@ -10,7 +10,8 @@ Read [How it works](docs/HOW_IT_WORKS.md) for the system flow and
 [Extending MLForge](docs/EXTENDING_MLFORGE.md) for practical change locations.
 The `v1/mlforge` branch is under construction. Packaging and noninteractive
 `mlforge --help` / `mlforge --version`, headless dataset/schema services, synthetic
-examples and standalone model export are implemented; the full terminal workflow
+examples, six-model fitting/evaluation and standalone model export are implemented;
+the full terminal workflow
 is not ready. Current progress and verification are in
 [BUILD_STATE](docs/v1/BUILD_STATE.md). The educational algorithms below remain supported.
 
