@@ -390,7 +390,9 @@ class Predictor:
         return instance
 
     def _initialize(self, root):
-        schema_data = _read(root, "schema.json", 2 * 1024 * 1024)
+        # Learned vocabularies can exceed 2 MiB within legal dataset budgets.
+        # Apply the canonical expanded-resource budget, also enforced on ZIPs.
+        schema_data = _read(root, "schema.json", MAX_EXPANDED)
         meta = _json(_read(root, "metadata.json", 4 * 1024 * 1024))
         if not isinstance(meta, dict) or meta.get("schema_version") != 1:
             raise ArtifactError("METADATA_VERSION: unsupported metadata")

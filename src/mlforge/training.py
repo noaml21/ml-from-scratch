@@ -3,22 +3,33 @@
 import json
 import warnings
 from collections.abc import Callable
+from pathlib import Path
+from time import monotonic
 
 import numpy as np
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.pipeline import Pipeline
 from threadpoolctl import threadpool_limits
 
-from mlforge.contracts import DomainError, PreparedRun, TaskKind
+from mlforge import evaluation
+from mlforge.contracts import (
+    CandidateResult,
+    CandidateStatus,
+    DomainError,
+    PreparedRun,
+    TaskKind,
+)
 from mlforge.datasets.records import TabularDataset
 from mlforge.models import model_spec
-from mlforge.prediction.runtime import environment
+from mlforge.prediction.runtime import ArtifactError, Predictor, environment
+from mlforge.prediction.schema import fitted_schema, save_bundle
 from mlforge.preprocessing import (
     MAX_FEATURES,
     MAX_MATRIX_BYTES,
     build_pipeline,
     input_fields,
     input_matrix,
+    raw_records,
 )
 from mlforge.tasks import target_values
 
@@ -136,3 +147,115 @@ def fit_pipeline(
         if np.any(estimator.explained_variance_ <= np.finfo(float).eps):
             notes.append("PCA_RANK_DEFICIENT")
     return pipeline, tuple(notes)
+
+
+def _evaluate(dataset: TabularDataset, prepared: PreparedRun, pipeline: Pipeline):
+    spec = prepared.experiment
+    matrix = input_matrix(
+        dataset,
+        prepared.schema,
+        spec.feature_ids,
+        prepared.test_rows if spec.task.supervised else prepared.train_rows,
+    )
+    if spec.task.supervised:
+        labels = target_values(dataset, prepared.schema, spec.target_id, spec.task)
+        train_y = [labels[i] for i in prepared.train_rows]
+        test_y = [labels[i] for i in prepared.test_rows]
+        predicted = pipeline.predict(matrix)
+        evaluator = (
+            evaluation.classification
+            if spec.task == TaskKind.CLASSIFICATION
+            else evaluation.regression
+        )
+        return evaluator(train_y, test_y, predicted)
+    transformed = pipeline.steps[0][1].transform(matrix)
+    estimator = pipeline.steps[-1][1]
+    if spec.task == TaskKind.CLUSTERING:
+        return evaluation.clustering(
+            transformed,
+            estimator.labels_,
+            estimator.cluster_centers_,
+            estimator.inertia_,
+            estimator.n_iter_,
+        )
+    return evaluation.reduction(
+        transformed,
+        estimator.inverse_transform(estimator.transform(transformed)),
+        estimator.explained_variance_,
+        estimator.explained_variance_ratio_,
+    )
+
+
+def train_candidate(
+    dataset: TabularDataset,
+    prepared: PreparedRun,
+    model_id: str,
+    directory: Path,
+    progress: Callable[[str], None] | None = None,
+) -> CandidateResult:
+    """Fit/evaluate/save once; return only a validated opaque immutable handle.
+
+    The caller owns the new private output directory and accepts this provisional
+    result only after worker exit/integrity validation. Failed output is never a
+    completed candidate. No source path or split row IDs enter the artifact.
+    """
+    started = monotonic()
+    try:
+        pipeline, notes = fit_pipeline(dataset, prepared, model_id, progress)
+        if progress:
+            progress("evaluating")
+        with threadpool_limits(limits=1):
+            assessed = _evaluate(dataset, prepared, pipeline)
+        if progress:
+            progress("validating_artifact")
+        spec = prepared.experiment
+        fields = input_fields(dataset, prepared.schema, spec.feature_ids)
+        schema = fitted_schema(
+            pipeline,
+            fields,
+            raw_records(dataset, spec.feature_ids, prepared.train_rows),
+        )
+        bundle = save_bundle(
+            directory,
+            pipeline,
+            schema,
+            model_id,
+            training_count=len(prepared.train_rows),
+            test_count=len(prepared.test_rows),
+            metrics={
+                m.key: {"value": m.value, "reason": m.reason} for m in assessed.metrics
+            },
+            diagnostics=json.loads(assessed.diagnostics_json),
+            warnings=notes,
+            acknowledgements=spec.acknowledgements,
+        )
+        Predictor._from_directory(directory)
+    except DomainError:
+        raise
+    except OSError:
+        raise DomainError(
+            "STORAGE",
+            "The candidate artifact could not be saved.",
+            "Check free space and permissions, then retry.",
+        ) from None
+    except ArtifactError:
+        raise DomainError(
+            "ARTIFACT",
+            "The fitted candidate artifact failed validation.",
+            "Retry this candidate in the supported environment.",
+        ) from None
+    except Exception:
+        raise DomainError(
+            "CANDIDATE_FAILED",
+            "This candidate could not be fitted or evaluated.",
+            "Review the data or try another available model.",
+        ) from None
+    return CandidateResult(
+        model_id,
+        CandidateStatus.COMPLETED,
+        monotonic() - started,
+        assessed.metrics,
+        assessed.diagnostics_json,
+        notes,
+        bundle,
+    )

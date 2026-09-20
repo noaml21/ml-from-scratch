@@ -83,3 +83,8 @@ The shared runtime eagerly validates its bundled resources. App and exported cod
 
 ## Implementation evidence at P02.3
 The six-model consumer matrix installs each wheel with its complete declared dependency closure into a fresh virtual environment outside the checkout. MLForge, Textual and Rich are absent. Installed inference checks task APIs, strict input validation, metadata isolation, compatibility/hash rejection and exact categorical/warning or tolerance-based numerical parity. Network audit hooks cover installation and inference. Local Python 3.12 evidence passed; supported-version CI results are recorded in BUILD_LOG. Later application/Try integration remains a separate gate.
+
+## P04 evaluated-pipeline integration
+The canonical dataset training service supplies the exact evaluated pipeline and its metrics/diagnostics to the existing bundle writer. Review acknowledgements and safe fitting warnings are retained; split row IDs, source paths and records remain excluded. All six clean-consumer fixtures now originate from canonical import, schema, preparation and evaluation.
+
+A legal 1,000-row, 3,024,021-byte CSV with long unique categories produces a 2,413,789-byte schema from 800 training rows. The earlier 2 MiB schema read cap incorrectly rejected it. Schema resource reads now use the existing 512 MiB expanded-resource ceiling; compressed/expanded ZIP bounds, member limits, fixed trust and hashes are unchanged. Regression coverage loads and exports this artifact and verifies the resource ceiling still rejects oversized input before parsing/deserialization.

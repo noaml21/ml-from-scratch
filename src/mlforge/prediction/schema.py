@@ -72,6 +72,7 @@ def save_bundle(
     metrics: dict | None = None,
     diagnostics: dict | None = None,
     warnings: tuple[str, ...] = (),
+    acknowledgements: tuple[str, ...] = (),
     partial: bool = False,
 ) -> ModelBundle:
     """Save exact fitted state; inputs deliberately omit paths, rows and split IDs."""
@@ -99,6 +100,7 @@ def save_bundle(
         "metrics": metrics or {},
         "diagnostics": diagnostics or {},
         "warnings": list(warnings),
+        "review_acknowledgements": list(acknowledgements),
         "partial_run": partial,
         "environment": environment(),
         "model_sha256": hashlib.sha256(model_data).hexdigest(),

@@ -119,13 +119,13 @@ def run(command, cwd, env):
 
 
 @pytest.mark.install
-def test_fresh_installed_consumer(fitted_bundle, tmp_path):
+def test_fresh_installed_consumer(evaluated_bundle, tmp_path):
     assert WHEELHOUSE.is_dir() and any(WHEELHOUSE.glob("*.whl")), (
         "Prepare dependencies first: "
         "python scripts/verify_package.py --prepare-wheelhouse"
     )
     assert ROOT not in tmp_path.resolve().parents, "Consumer must be outside checkout"
-    bundle, predictor, _, records, _ = fitted_bundle
+    bundle, predictor, _, records, _ = evaluated_bundle
     module_name = (
         "installed__model" if bundle.model_id.endswith("forest") else "installed_model_"
     )
