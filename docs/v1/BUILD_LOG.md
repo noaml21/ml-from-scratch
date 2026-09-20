@@ -222,3 +222,16 @@ Current pointer: [BUILD_STATE.md](BUILD_STATE.md). This file records historical 
 - Focused pipeline + architecture + prediction runtime session 86836 exit 0: 91 passed in 12.75s; Ruff/check-format and diff check passed. Installed model consumers deferred to the P04 evaluated-bundle phase gate.
 - Code review noted runtime's 2 MiB schema resource cap is narrower than dataset/archive budgets; not yet reproduced with a real large vocabulary. Investigate in P04.3 integration instead of silently advertising universal export coverage.
 - Intended commit: feat(ml): fit isolated training-only candidate pipelines. Split next oversized unit into P04.3.a evaluation/diagnostic/ranking functions, P04.3.b evaluated bundle integration/resource review, then P04.3.c full phase gate. No later phase started.
+
+- P04.2 committed/pushed as 6375e64. P04.3.a starts: pure evaluation/diagnostics/ranking in evaluation.py and independent metric fixtures. No widgets, estimator fitting or process ownership in evaluation.
+
+## P04.3 continuation reconciliation
+- Read AGENTS, RESUME_PROTOCOL, BUILD_STATE, plan/execution protocol and active owners; actual branch v1/mlforge and HEAD 6375e645d874f04afa3c11766ff42002172bc8ec confirmed, planning ancestry retained. P04.2 is committed/pushed; checkpoint's uncommitted description was stale.
+- Preserved untracked partial evaluation.py and external CLAUDE.md, with existing state/log edits; no staged files and no reset/stash/discard. Partial evaluation has no tests yet and one known Ruff long-line defect; no active local check to duplicate.
+- Correct next action remains P04.3.a evaluation verification, then evaluated-bundle integration and evidence-based schema-cap investigation. 11 of 30 top-level work units completed; P05-P10 not started.
+
+## P04.3.a VERIFIED — metrics, diagnostics and ranking
+- Completed preserved evaluation.py and added pipeline/test_metrics.py with hand-calculated classification/confusion/baseline, regression negative/undefined R² and train-mean baseline, silhouette degeneracy/sampling, PCA reconstruction and deterministic ranking cases. Nonfinite/overflow values fail safely. No dependency edge changed.
+- Updated ML_PIPELINE and practical guides to distinguish implemented metric services from pending evaluated-bundle orchestration. Resume confirmed remote HEAD 6375e645d874f04afa3c11766ff42002172bc8ec and preserved external CLAUDE.md.
+- Focused pipeline + architecture: 72 passed in 11.22s (session 78135), rerun after resume 72 passed in 9.13s (session 50421, exit 0). Scoped Ruff/check-format and git diff --check passed. No full build/consumer repeat for pure metric unit.
+- Reviewed paths; intended commit: feat(ml): evaluate task metrics and rank candidates. Next P04.3.b exact evaluated bundles and real schema-cap reproduction; phase gate remains incomplete.
