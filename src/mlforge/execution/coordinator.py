@@ -25,6 +25,7 @@ from mlforge.execution.protocol import (
     encode,
     read_owned,
     validate_result,
+    verify_artifact,
     write_owned,
 )
 
@@ -63,12 +64,34 @@ class Outcome:
     cancelled: bool = False
     returncode: int | None = None
     stderr_bytes: int = 0
+    fatal: bool = False
+    reported: bool = False
 
     @property
     def completed(self):
         return (
             self.result is not None and self.error_code is None and not self.cancelled
         )
+
+
+@dataclass(frozen=True)
+class RunOutcome:
+    outcomes: tuple[Outcome, ...]
+    expected_count: int
+    cancelled: bool = False
+    aborted: bool = False
+
+    @property
+    def all_failed(self):
+        return (
+            not self.cancelled
+            and len(self.outcomes) == self.expected_count
+            and all(not item.completed for item in self.outcomes)
+        )
+
+    @property
+    def completed(self):
+        return tuple(item for item in self.outcomes if item.completed)
 
 
 class Coordinator:
@@ -116,7 +139,7 @@ class Coordinator:
         if interrupted:
             raise asyncio.CancelledError
 
-    async def run(self, request, *, cancellation=None, on_event=None):
+    async def run(self, request, *, cancellation=None, on_event=None, deadline=None):
         if self._closed or self.root is None or self._busy:
             raise RuntimeError("Coordinator is closed, unopened or busy")
         if type(request) is not Request:
@@ -125,7 +148,7 @@ class Coordinator:
         self._idle.clear()
         self._cancel = cancellation if cancellation is not None else asyncio.Event()
         try:
-            outcome = await self._run(request, self._cancel, on_event)
+            outcome = await self._run(request, self._cancel, on_event, deadline)
             if self._cancel.is_set():
                 return Outcome(
                     request,
@@ -139,10 +162,76 @@ class Coordinator:
             self._busy = False
             self._idle.set()
 
-    async def _run(self, request, cancellation, on_event):
+    async def run_many(
+        self,
+        requests,
+        *,
+        cancellation=None,
+        on_event=None,
+        on_result=None,
+        abort_codes=frozenset(),
+        deadline=None,
+    ):
+        """Serial candidates; application supplies domain errors that abort a run.
+
+        A deadline is absolute monotonic time, so shared preparation can consume
+        the same supervised 300-second budget rather than resetting it here.
+        """
+        requests = tuple(requests)
+        if not 1 <= len(requests) <= 2 or any(type(r) is not Request for r in requests):
+            raise ProtocolError()
+        identities = [r.identity for r in requests]
+        if (
+            any(i.operation != Operation.TRAIN for i in identities)
+            or len({(i.run_id, i.revision) for i in identities}) != 1
+            or len({i.operation_id for i in identities}) != len(identities)
+            or len({i.model_id for i in identities}) != len(identities)
+        ):
+            raise ProtocolError()
+        if self._closed or self.root is None or self._busy:
+            raise RuntimeError("Coordinator is closed, unopened or busy")
+        self._busy = True
+        self._idle.clear()
+        self._cancel = cancellation if cancellation is not None else asyncio.Event()
+        deadline = time.monotonic() + 300 if deadline is None else deadline
+        outcomes = []
+        aborted = False
+        try:
+            for request in requests:
+                if self._cancel.is_set():
+                    break
+                outcome = await self._run(request, self._cancel, on_event, deadline)
+                if self._cancel.is_set():
+                    break  # Unaccepted completion is not retained.
+                outcomes.append(outcome)
+                if on_result is not None:
+                    on_result(outcome)
+                if outcome.fatal or (
+                    outcome.reported and outcome.error_code in abort_codes
+                ):
+                    aborted = True
+                    break
+                if time.monotonic() >= deadline:
+                    aborted = True
+                    break
+            return RunOutcome(
+                tuple(outcomes), len(requests), self._cancel.is_set(), aborted
+            )
+        finally:
+            self._cancel = None
+            self._busy = False
+            self._idle.set()
+
+    async def _run(self, request, cancellation, on_event, deadline=None):
         if cancellation.is_set():
             return Outcome(request, cancelled=True)
         started = time.monotonic()
+        expires = min(
+            started + DEADLINES[request.identity.operation],
+            deadline if deadline is not None else float("inf"),
+        )
+        if started >= expires:
+            return Outcome(request, error_code="TIMEOUT")
         proc = None
         completion = None
         cancel_wait = None
@@ -162,7 +251,7 @@ class Coordinator:
                         raise ProtocolError()
                     last_event = stream.accept(bytes(buffer[:end]))
                     del buffer[:end]
-                    if on_event is not None:
+                    if on_event is not None and not cancellation.is_set():
                         on_event(last_event)
                 if len(buffer) >= MAX_EVENT:
                     raise ProtocolError()
@@ -176,6 +265,20 @@ class Coordinator:
                 stderr_bytes = min(MAX_STDERR, stderr_bytes + len(chunk))
 
         try:
+
+            def verify_inputs():
+                for artifact in request.inputs:
+                    verify_artifact(self.root, artifact)
+
+            _, interrupted = await _settle(
+                asyncio.create_task(asyncio.to_thread(verify_inputs))
+            )
+            if interrupted:
+                raise asyncio.CancelledError
+            if cancellation.is_set():
+                return Outcome(request, cancelled=True)
+            if time.monotonic() >= expires:
+                return Outcome(request, error_code="TIMEOUT")
             write_owned(
                 self.root,
                 f"request-{request.identity.operation_id}.json",
@@ -203,9 +306,7 @@ class Coordinator:
             drains = [asyncio.create_task(stdout()), asyncio.create_task(stderr())]
             completion = asyncio.gather(proc.wait(), *drains)
             cancel_wait = asyncio.create_task(cancellation.wait())
-            remaining = max(
-                0, DEADLINES[request.identity.operation] - (time.monotonic() - started)
-            )
+            remaining = max(0, expires - time.monotonic())
             done, _ = await asyncio.wait(
                 {completion, cancel_wait},
                 timeout=remaining,
@@ -233,6 +334,7 @@ class Coordinator:
                 return Outcome(
                     request,
                     error_code=code,
+                    reported=last_event.kind == EventKind.FAILED,
                     returncode=proc.returncode,
                     stderr_bytes=stderr_bytes,
                 )
@@ -260,7 +362,7 @@ class Coordinator:
             )
             if interrupted:
                 raise asyncio.CancelledError
-            if time.monotonic() - started > DEADLINES[request.identity.operation]:
+            if time.monotonic() >= expires:
                 return Outcome(request, error_code="TIMEOUT", stderr_bytes=stderr_bytes)
             return Outcome(
                 request,
@@ -269,9 +371,16 @@ class Coordinator:
                 stderr_bytes=stderr_bytes,
             )
         except ProtocolError:
-            return Outcome(request, error_code="PROTOCOL", stderr_bytes=stderr_bytes)
+            return Outcome(
+                request,
+                error_code="PROTOCOL",
+                stderr_bytes=stderr_bytes,
+                fatal=proc is None,
+            )
         except OSError:
-            return Outcome(request, error_code="STORAGE", stderr_bytes=stderr_bytes)
+            return Outcome(
+                request, error_code="STORAGE", stderr_bytes=stderr_bytes, fatal=True
+            )
         finally:
             interrupted = False
             if proc is not None:

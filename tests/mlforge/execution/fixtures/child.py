@@ -34,7 +34,9 @@ if mode == "grandchild":
         while True:
             signal.pause()
     write_owned(root, "grandchild.pid", str(pid).encode())
-write_owned(root, "child.pid", str(os.getpid()).encode())
+write_owned(root, f"child-{operation_id}.pid", str(os.getpid()).encode())
+if not (root / "child.pid").exists():
+    write_owned(root, "child.pid", str(os.getpid()).encode())
 event(0, EventKind.STARTED)
 if mode in {"hang", "ignore", "grandchild"}:
     if mode == "grandchild":
@@ -49,6 +51,9 @@ elif mode == "truncated":
 elif mode == "oversized":
     os.write(1, b"x" * 20000)
     time.sleep(60)
+elif mode.startswith("failure-"):
+    event(1, EventKind.FAILED, error_code=mode.removeprefix("failure-"))
+    os._exit(1)
 elif mode == "crash":
     os._exit(19)
 else:

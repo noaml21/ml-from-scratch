@@ -24,8 +24,10 @@ def child(monkeypatch):
     original = asyncio.create_subprocess_exec
 
     def use(mode):
+        launched = []
+
         async def spawn(*args, **kwargs):
-            return await original(
+            proc = await original(
                 sys.executable,
                 str(Path(__file__).parent / "fixtures/child.py"),
                 args[3],
@@ -33,8 +35,11 @@ def child(monkeypatch):
                 mode,
                 **kwargs,
             )
+            launched.append(proc.pid)
+            return proc
 
         monkeypatch.setattr(coordinator.asyncio, "create_subprocess_exec", spawn)
+        return launched
 
     return use
 
@@ -109,14 +114,15 @@ async def test_cancel_reaps_group_and_preserves_sentinel(child, mode, tmp_path):
 
 
 async def test_timeout_is_bounded(child, monkeypatch):
-    child("ignore")
-    monkeypatch.setitem(coordinator.DEADLINES, Operation.PARSE, 0.2)
+    launched = child("ignore")
+    monkeypatch.setitem(coordinator.DEADLINES, Operation.PARSE, 1.0)
     async with coordinator.Coordinator() as owner:
         started = time.monotonic()
         result = await asyncio.wait_for(owner.run(request()), 5)
         assert result.error_code == "TIMEOUT" and not result.completed
         assert time.monotonic() - started < 5
-        gone(int((owner.root / "child.pid").read_text()))
+        assert len(launched) == 1
+        gone(launched[0])
 
 
 @pytest.mark.parametrize(
