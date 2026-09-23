@@ -66,6 +66,15 @@ class Run:
 
 
 @dataclass(frozen=True)
+class Failure:
+    code: str
+    message: str
+    action: str
+    row: int | None = None
+    column: str | None = None
+
+
+@dataclass(frozen=True)
 class Session:
     revisions: Revisions = Revisions()
     dataset: TabularDataset | None = None
@@ -78,6 +87,7 @@ class Session:
     activity: Activity = Activity.IDLE
     active: ActiveOperation | None = None
     error_code: str | None = None
+    failure: Failure | None = None
     exported_path: str | None = None
 
     @property

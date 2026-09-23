@@ -1,20 +1,29 @@
 """Session commands and semantic acceptance; no widgets, fitting or process code."""
 
 import asyncio
+import time
 import uuid
 from dataclasses import replace
 from pathlib import Path
 
+from mlforge.application import artifacts
 from mlforge.application.state import (
     ActiveOperation,
     Activity,
     Configuration,
+    Failure,
     Revisions,
     Run,
     RunStatus,
     Session,
 )
-from mlforge.contracts import CandidateStatus, DomainError, ExperimentSpec, TaskKind
+from mlforge.contracts import (
+    CandidateResult,
+    CandidateStatus,
+    DomainError,
+    ExperimentSpec,
+    TaskKind,
+)
 from mlforge.datasets.records import (
     ColumnType,
     dataset_data,
@@ -22,7 +31,7 @@ from mlforge.datasets.records import (
     schema_data,
     schema_from_data,
 )
-from mlforge.evaluation import ranked_candidates
+from mlforge.evaluation import ranked_candidates, recommendation
 from mlforge.execution.coordinator import Coordinator, _settle
 from mlforge.execution.protocol import (
     MAX_FILE,
@@ -49,6 +58,7 @@ class Service:
     def __init__(self):
         self._state = Session()
         self._closing = False
+        self._bundles = {}
         self._coordinator = Coordinator()
         self._idle = asyncio.Event()
         self._idle.set()
@@ -87,7 +97,7 @@ class Service:
                     for index, value in enumerate(values())
                 )
 
-            artifacts, interrupted = await _settle(
+            input_artifacts, interrupted = await _settle(
                 asyncio.create_task(asyncio.to_thread(inputs))
             )
             if interrupted:
@@ -95,11 +105,20 @@ class Service:
             if not self._current(identity):
                 return False
             request = Request(
-                identity, artifacts, output_names(identity), json_data(options).decode()
+                identity,
+                input_artifacts,
+                output_names(identity),
+                json_data(options).decode(),
             )
             outcome = await self._coordinator.run(request, on_event=self._event)
             if not outcome.completed:
+                if outcome.cancelled:
+                    return False
+                failure = await self._io(
+                    artifacts.failure_result, self._coordinator.root, outcome
+                )
                 self._end_operation(identity, error_code=outcome.error_code)
+                self._failure(failure)
                 return False
 
             def decoded():
@@ -201,6 +220,7 @@ class Service:
         if configuration == self._state.configuration:
             return
         self._editable(discard)
+        self._bundles.clear()
         self._state = replace(
             self._state,
             revisions=replace(
@@ -211,6 +231,7 @@ class Service:
             run=None,
             selected_model_id=None,
             error_code=None,
+            failure=None,
             exported_path=None,
         )
 
@@ -357,6 +378,7 @@ class Service:
             selected_model_id=None,
             activity=Activity.RUNNING,
             error_code=None,
+            failure=None,
             exported_path=None,
         )
         return run
@@ -393,6 +415,7 @@ class Service:
             active=ActiveOperation(identity, self._state.revisions),
             activity=Activity.RUNNING,
             error_code=None,
+            failure=None,
         )
         return identity
 
@@ -443,6 +466,7 @@ class Service:
         ):
             return False
         old = self._state.revisions
+        self._bundles.clear()
         self._state = Session(
             revisions=Revisions(old.dataset + 1, old.schema + 1, old.experiment + 1),
             dataset=dataset,
@@ -462,6 +486,7 @@ class Service:
         ):
             return False
         old = self._state.revisions
+        self._bundles.clear()
         self._state = Session(
             revisions=Revisions(old.dataset, old.schema + 1, old.experiment + 1),
             dataset=self._state.dataset,
@@ -469,8 +494,11 @@ class Service:
         )
         return True
 
-    def _accept_candidate(self, identity, candidate):
-        if not self._current(identity) or identity.operation != Operation.TRAIN:
+    def _accept_candidate(self, identity, candidate, *, accepted_before_cancel=False):
+        if (
+            not self._current(identity, allow_cancelling=accepted_before_cancel)
+            or identity.operation != Operation.TRAIN
+        ):
             return False
         run = self._state.run
         if (
@@ -510,7 +538,7 @@ class Service:
         )
         return True
 
-    def _end_training(self, run_id):
+    def _end_training(self, run_id, *, aborted=False):
         run = self._state.run
         if (
             run is None
@@ -524,7 +552,7 @@ class Service:
         cancelled = self._state.activity == Activity.CANCELLING
         status = (
             RunStatus.PARTIAL
-            if cancelled and successful
+            if (cancelled or aborted) and successful
             else RunStatus.CANCELLED
             if cancelled
             else RunStatus.COMPLETED
@@ -538,6 +566,224 @@ class Service:
             activity=Activity.IDLE,
         )
         return True
+
+    async def _io(self, function, *args):
+        value, interrupted = await _settle(
+            asyncio.create_task(asyncio.to_thread(function, *args))
+        )
+        if interrupted:
+            raise asyncio.CancelledError
+        return value
+
+    def _failure(self, failure):
+        self._state = replace(self._state, error_code=failure.code, failure=failure)
+
+    @property
+    def ranked_results(self):
+        run = self._state.run
+        return ranked_candidates(run.experiment.task, run.candidates) if run else ()
+
+    @property
+    def recommended(self):
+        run = self._state.run
+        return recommendation(run.experiment.task, run.candidates) if run else None
+
+    async def train(self, *, discard=False):
+        self._open_command(discard)
+        run = self._begin_training(discard=discard)
+        self._idle.clear()
+        self._bundles.clear()
+        deadline = time.monotonic() + 300
+        aborted = False
+        try:
+            identity = self._begin_operation(Operation.PREPARE)
+            inputs = await self._io(
+                artifacts.preparation_inputs,
+                self._coordinator.root,
+                identity,
+                self._state.dataset,
+                self._state.schema,
+                run.experiment,
+            )
+            if not self._current(identity):
+                return False
+            prepared_request = Request(identity, inputs, output_names(identity))
+            outcome = await self._coordinator.run(
+                prepared_request, on_event=self._event, deadline=deadline
+            )
+            if not outcome.completed:
+                if outcome.cancelled:
+                    return False
+                failure = await self._io(
+                    artifacts.failure_result, self._coordinator.root, outcome
+                )
+                self._end_operation(identity, error_code=failure.code)
+                self._failure(failure)
+                return False
+            prepared = await self._io(
+                artifacts.prepared_result,
+                self._coordinator.root,
+                outcome,
+                run.experiment,
+                self._state.schema,
+                len(self._state.dataset.rows),
+            )
+            if not self._current(identity):
+                return False
+            self._state = replace(self._state, prepared=prepared)
+            self._end_operation(identity)
+            requests = []
+            for model_id in run.experiment.model_ids:
+                candidate_id = Identity(
+                    run.id,
+                    run.revisions.experiment,
+                    uuid.uuid4().hex,
+                    Operation.TRAIN,
+                    model_id,
+                )
+                requests.append(
+                    Request(
+                        candidate_id,
+                        (inputs[0], outcome.result.artifacts[0]),
+                        output_names(candidate_id),
+                    )
+                )
+            expected = {request.identity for request in requests}
+            started = {}
+
+            def activate(identity):
+                if (
+                    identity not in expected
+                    or self._state.run is None
+                    or self._state.run.id != run.id
+                    or self._state.revisions != run.revisions
+                ):
+                    return False
+                if (
+                    self._state.active is None
+                    and self._state.activity == Activity.RUNNING
+                ):
+                    self._state = replace(
+                        self._state, active=ActiveOperation(identity, run.revisions)
+                    )
+                    started[identity] = time.monotonic()
+                return self._current(identity)
+
+            def event(value):
+                if activate(value.identity):
+                    self._event(value)
+
+            async def accepted(outcome):
+                identity = outcome.request.identity
+                lease = activate(identity)
+                if not lease:
+                    return
+                if outcome.completed:
+                    try:
+                        (candidate, refs), interrupted = await _settle(
+                            asyncio.create_task(
+                                asyncio.to_thread(
+                                    artifacts.candidate_result,
+                                    self._coordinator.root,
+                                    outcome,
+                                    prepared,
+                                )
+                            )
+                        )
+                        if interrupted:
+                            self.cancel()
+                    except (ValueError, KeyError, TypeError):
+                        candidate = CandidateResult(
+                            identity.model_id,
+                            CandidateStatus.FAILED,
+                            time.monotonic() - started[identity],
+                            error_code="PROTOCOL",
+                            error_message="The candidate returned invalid data.",
+                        )
+                    else:
+                        if self._accept_candidate(
+                            identity, candidate, accepted_before_cancel=lease
+                        ):
+                            self._bundles[identity.model_id] = refs
+                        self._end_operation(identity)
+                        if interrupted:
+                            raise asyncio.CancelledError
+                        return
+                else:
+                    failure = await self._io(
+                        artifacts.failure_result, self._coordinator.root, outcome
+                    )
+                    candidate = CandidateResult(
+                        identity.model_id,
+                        CandidateStatus.FAILED,
+                        time.monotonic() - started[identity],
+                        error_code=failure.code,
+                        error_message=failure.message,
+                    )
+                self._accept_candidate(
+                    identity, candidate, accepted_before_cancel=lease
+                )
+                self._end_operation(identity)
+
+            results = await self._coordinator.run_many(
+                requests,
+                on_event=event,
+                on_result=accepted,
+                deadline=deadline,
+                abort_codes=frozenset(
+                    {
+                        "STORAGE",
+                        "STALE_RUN",
+                        "STALE_DATA",
+                        "INPUT_SCHEMA",
+                        "MATRIX_LIMIT",
+                    }
+                ),
+            )
+            aborted = results.aborted
+            if aborted and results.outcomes:
+                self._failure(
+                    await self._io(
+                        artifacts.failure_result,
+                        self._coordinator.root,
+                        results.outcomes[-1],
+                    )
+                )
+        except asyncio.CancelledError:
+            self.cancel()
+            raise
+        except (OSError, ValueError) as error:
+            aborted = True
+            self._failure(
+                Failure(
+                    error.code
+                    if isinstance(error, DomainError)
+                    else "STORAGE"
+                    if isinstance(error, OSError)
+                    else "PROTOCOL",
+                    "Training could not complete safely.",
+                    "Review the configuration and retry.",
+                )
+            )
+        finally:
+            if self._state.active is not None:
+                self._end_operation(
+                    self._state.active.identity, error_code=self._state.error_code
+                )
+            self._end_training(run.id, aborted=aborted)
+            if (
+                self._state.run.status == RunStatus.FAILED
+                and self._state.error_code is None
+            ):
+                self._failure(
+                    Failure(
+                        "ALL_FAILED",
+                        "No model completed successfully.",
+                        "Review candidate errors or return to configuration.",
+                    )
+                )
+            self._idle.set()
+        return self._state.run.status == RunStatus.COMPLETED
 
     def cancel(self):
         self._coordinator.cancel()

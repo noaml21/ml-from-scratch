@@ -2,6 +2,7 @@
 
 import asyncio
 import ctypes
+import inspect
 import os
 import shutil
 import signal
@@ -369,7 +370,9 @@ class Coordinator:
                     break  # Unaccepted completion is not retained.
                 outcomes.append(outcome)
                 if on_result is not None:
-                    on_result(outcome)
+                    handled = on_result(outcome)
+                    if inspect.isawaitable(handled):
+                        await handled
                 if outcome.fatal or (
                     outcome.reported and outcome.error_code in abort_codes
                 ):
