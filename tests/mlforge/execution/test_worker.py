@@ -191,6 +191,8 @@ def test_six_models_real_worker_prepare_train_predict(prepared_candidate, root):
     assert data(root, predictions.artifacts[0]) == operation(records)
     # Actual worker export for one model; all runtime contracts are unchanged.
     if model.id == "classification.logistic":
+        publication = root.parent / "exports" / ".mlforge-parent-owned"
+        publication.mkdir(parents=True, mode=0o700)
         result, _, exported = run(
             root,
             request(
@@ -198,17 +200,18 @@ def test_six_models_real_worker_prepare_train_predict(prepared_candidate, root):
                 Operation.EXPORT,
                 (*trained.artifacts, probes),
                 {
-                    "destination": str(root.parent / "exports"),
                     "module_name": "worker_model",
                     "version": "1.0.0",
+                    "publication_directory": str(publication),
                 },
                 model.id,
             ),
         )
         assert result.returncode == 0
-        assert (
-            root.parent / "exports" / data(root, exported.artifacts[0])["name"]
-        ).is_file()
+        assert (publication / "wheel.whl").is_file()
+        assert not (
+            publication.parent / data(root, exported.artifacts[0])["name"]
+        ).exists()
 
 
 def test_malformed_request_has_no_output_or_private_log(root):

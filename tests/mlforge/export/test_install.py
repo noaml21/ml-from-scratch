@@ -21,6 +21,7 @@ def reject_network(event, args):
                  "socket.gethostbyname", "socket.sendto"}:
         os._exit(93)
 sys.addaudithook(reject_network)
+ACTIVE = True
 """
 CONSUMER = """
 import importlib
@@ -29,7 +30,8 @@ import json
 import sys
 from importlib.metadata import distributions, version
 from pathlib import Path
-assert "sitecustomize" in sys.modules, "Network guard was not loaded"
+assert "mlforge_consumer_guard" in sys.modules, "Network guard was not loaded"
+assert sys.modules["mlforge_consumer_guard"].ACTIVE
 assert not any(Path(p).resolve() == Path(sys.argv[4]).resolve() for p in sys.path if p)
 for name in ("mlforge", "textual", "rich"):
     assert importlib.util.find_spec(name) is None, name
@@ -159,7 +161,25 @@ def test_fresh_installed_consumer(evaluated_bundle, tmp_path):
                 env,
             )
         )
-        (site / "sitecustomize.py").write_text(NETWORK_GUARD)
+        (site / "mlforge_consumer_guard.py").write_text(NETWORK_GUARD)
+        (site / "zz_mlforge_consumer_guard.pth").write_text(
+            "import mlforge_consumer_guard\n"
+        )
+        denied = subprocess.run(
+            [
+                python,
+                "-I",
+                "-c",
+                "import socket; socket.socket().connect(('127.0.0.1', 9))",
+            ],
+            cwd=cwd,
+            env=env,
+            capture_output=True,
+            timeout=30,
+        )
+        assert denied.returncode == 93, (
+            "Network guard did not block the control connection"
+        )
         run(
             [
                 python,

@@ -5,10 +5,8 @@ import csv
 import hashlib
 import io
 import json
-import keyword
 import math
 import os
-import re
 import subprocess
 import sys
 import tempfile
@@ -22,7 +20,7 @@ from packaging.specifiers import SpecifierSet
 from packaging.utils import canonicalize_name
 from packaging.version import Version
 
-from mlforge.contracts import DomainError, ModelBundle
+from mlforge.contracts import DomainError, ExportOptions, ModelBundle, distribution_name
 from mlforge.prediction.runtime import (
     INFERENCE_DEPENDENCIES,
     ArtifactError,
@@ -30,8 +28,6 @@ from mlforge.prediction.runtime import (
     validate_archive,
 )
 
-MODULE_NAME = re.compile(r"[a-z][a-z0-9_]{2,49}\Z")
-VERSION = re.compile(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\Z")
 RESERVED = set(sys.stdlib_module_names) | {
     "mlforge",
     "numpy",
@@ -67,10 +63,9 @@ with open(sys.argv[4], 'w', encoding='utf-8') as stream:
 
 
 def validate_options(module_name: str, version: str) -> None:
+    ExportOptions(module_name, version)
     if (
-        not MODULE_NAME.fullmatch(module_name)
-        or keyword.iskeyword(module_name)
-        or module_name in RESERVED
+        module_name in RESERVED
         or distribution_name(module_name) in RESERVED_DISTRIBUTIONS
     ):
         raise DomainError(
@@ -78,7 +73,7 @@ def validate_options(module_name: str, version: str) -> None:
             "Choose a valid, non-reserved module name.",
             "Use 3–50 lowercase letters, digits or underscores; start with a letter.",
         )
-    if not VERSION.fullmatch(version) or str(Version(version)) != version:
+    if str(Version(version)) != version:
         raise DomainError(
             "PACKAGE_VERSION",
             "Use a three-part version such as 1.0.0.",
@@ -86,13 +81,8 @@ def validate_options(module_name: str, version: str) -> None:
         )
 
 
-def distribution_name(module_name: str) -> str:
-    """Keep the import name; normalize separators for valid distribution metadata."""
-    return canonicalize_name(module_name).rstrip("-")
-
-
 def wheel_stem(module_name: str, version: str) -> str:
-    return f"{distribution_name(module_name).replace('-', '_')}-{version}"
+    return ExportOptions(module_name, version).wheel_stem
 
 
 def validate_wheel(data: bytes, module_name: str, version: str) -> None:

@@ -62,7 +62,11 @@ OPTION_KEYS = {
     Operation.PREPARE: set(),
     Operation.TRAIN: set(),
     Operation.PREDICT: set(),
-    Operation.EXPORT: {"destination", "module_name", "version"},
+    Operation.EXPORT: {
+        "module_name",
+        "version",
+        "publication_directory",
+    },
 }
 
 
@@ -209,14 +213,25 @@ def _export(root, request, options, progress):
     progress("exporting")
     bundle, records = _bundle_inputs(root, request)
     _check(all(type(value) is str and len(value) <= 4096 for value in options.values()))
-    _check(Path(options["destination"]).is_absolute())
+    publication = Path(options["publication_directory"])
+    _check(publication.is_absolute())
+    descriptor = os.open(publication, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        info = os.fstat(descriptor)
+        _check(info.st_uid == os.getuid() and info.st_mode & 0o777 == 0o700)
+    finally:
+        os.close(descriptor)
     wheel = export_wheel(
         bundle,
-        Path(options["destination"]),
+        publication,
         options["module_name"],
         options["version"],
         records,
     )
+    # The worker only stages bytes; final destination publication belongs to parent.
+    os.link(wheel, publication / "wheel.whl", follow_symlinks=False)
+    wheel.unlink()
+    staged = publication / "wheel.whl"
     progress("validating_artifact")
     return [
         _save(
@@ -224,8 +239,8 @@ def _export(root, request, options, progress):
             request.outputs[0],
             {
                 "name": wheel.name,
-                "size": wheel.stat().st_size,
-                "sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
+                "size": staged.stat().st_size,
+                "sha256": hashlib.sha256(staged.read_bytes()).hexdigest(),
             },
         )
     ]

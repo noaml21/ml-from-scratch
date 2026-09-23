@@ -45,6 +45,57 @@ class DomainError(ValueError):
         self.column = column
 
 
+def distribution_name(module_name: str) -> str:
+    """PEP distribution normalization, preserving Python's separate import name."""
+    import re
+
+    return re.sub(r"[-_.]+", "-", module_name).lower().rstrip("-")
+
+
+@dataclass(frozen=True)
+class ExportOptions:
+    """Shared syntax and deterministic filename; exporter checks reserved names."""
+
+    module_name: str
+    version: str
+
+    def __post_init__(self):
+        import keyword
+        import re
+
+        if (
+            type(self.module_name) is not str
+            or re.fullmatch(r"[a-z][a-z0-9_]{2,49}", self.module_name) is None
+            or keyword.iskeyword(self.module_name)
+        ):
+            raise DomainError(
+                "PACKAGE_NAME",
+                "Choose a valid, non-reserved module name.",
+                "Use 3–50 lowercase letters, digits or underscores; "
+                "start with a letter.",
+            )
+        if (
+            type(self.version) is not str
+            or re.fullmatch(
+                r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)", self.version
+            )
+            is None
+        ):
+            raise DomainError(
+                "PACKAGE_VERSION",
+                "Use a three-part version such as 1.0.0.",
+                "Use nonnegative integers without leading zeros.",
+            )
+
+    @property
+    def wheel_stem(self):
+        return f"{distribution_name(self.module_name).replace('-', '_')}-{self.version}"
+
+    @property
+    def wheel_name(self):
+        return f"{self.wheel_stem}-py3-none-any.whl"
+
+
 @dataclass(frozen=True)
 class ExperimentSpec:
     dataset_revision: int

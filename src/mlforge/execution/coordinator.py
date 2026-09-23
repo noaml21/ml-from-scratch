@@ -3,18 +3,22 @@
 import asyncio
 import ctypes
 import os
+import shutil
 import signal
+import stat
 import sys
 import tempfile
 import time
-from dataclasses import dataclass
+from contextlib import asynccontextmanager
+from dataclasses import dataclass, replace
 from pathlib import Path
 
-from mlforge.contracts import DomainError
+from mlforge.contracts import DomainError, ExportOptions
 from mlforge.execution.protocol import (
     MAX_EVENT,
     MAX_MESSAGE,
     MAX_STDERR,
+    Artifact,
     EventKind,
     EventStream,
     Operation,
@@ -23,6 +27,7 @@ from mlforge.execution.protocol import (
     Result,
     decode,
     encode,
+    parse_json,
     read_owned,
     validate_result,
     verify_artifact,
@@ -66,6 +71,7 @@ class Outcome:
     stderr_bytes: int = 0
     fatal: bool = False
     reported: bool = False
+    published_path: str | None = None
 
     @property
     def completed(self):
@@ -106,6 +112,7 @@ class Coordinator:
         self._idle = asyncio.Event()
         self._idle.set()
         self._previous_subreaper = None
+        self._publication_directories = {}
 
     async def __aenter__(self):
         if self._temporary is not None or self._closed:
@@ -132,12 +139,63 @@ class Coordinator:
         self._closed = True
         self.cancel()
         _, interrupted = await _settle(asyncio.create_task(self._idle.wait()))
+        for path in tuple(self._publication_directories):
+            self._release_publication(path)
         if self._temporary is not None:
             self._temporary.cleanup()
             self._temporary = None
             _subreaper(self._previous_subreaper)
         if interrupted:
             raise asyncio.CancelledError
+
+    @asynccontextmanager
+    async def publication_staging(self, destination):
+        """Parent-owned private destination resource, removed only after reaping."""
+        if self._closed or self.root is None or self._busy:
+            raise RuntimeError("Cannot reserve publication staging now")
+        destination = Path(destination).expanduser().resolve()
+        try:
+            destination.mkdir(parents=True, exist_ok=True)
+            path = Path(tempfile.mkdtemp(prefix=".mlforge-", dir=destination))
+            info = path.lstat()
+            self._publication_directories[path] = (info.st_dev, info.st_ino)
+        except OSError:
+            raise DomainError(
+                "EXPORT_IO",
+                "Could not create private export staging.",
+                "Choose a writable destination with free space.",
+            ) from None
+        try:
+            yield path
+        finally:
+            self.cancel()
+            _, interrupted = await _settle(asyncio.create_task(self._idle.wait()))
+            self._release_publication(path)
+            if interrupted:
+                raise asyncio.CancelledError
+
+    def _release_publication(self, path):
+        identity = self._publication_directories.get(path)
+        if identity is None:
+            return
+        try:
+            info = path.lstat()
+            if (info.st_dev, info.st_ino) != identity or not stat.S_ISDIR(info.st_mode):
+                raise DomainError(
+                    "OWNERSHIP",
+                    "Export staging ownership changed.",
+                    "Inspect the destination; unrelated paths were not removed.",
+                )
+            shutil.rmtree(path)
+        except FileNotFoundError:
+            pass
+        except OSError:
+            raise DomainError(
+                "EXPORT_IO",
+                "Could not remove private export staging.",
+                "Check destination permissions and retry cleanup.",
+            ) from None
+        self._publication_directories.pop(path)
 
     async def run(self, request, *, cancellation=None, on_event=None, deadline=None):
         if self._closed or self.root is None or self._busy:
@@ -148,7 +206,13 @@ class Coordinator:
         self._idle.clear()
         self._cancel = cancellation if cancellation is not None else asyncio.Event()
         try:
-            outcome = await self._run(request, self._cancel, on_event, deadline)
+            expires = min(
+                time.monotonic() + DEADLINES[request.identity.operation],
+                deadline if deadline is not None else float("inf"),
+            )
+            outcome = await self._run(request, self._cancel, on_event, expires)
+            if outcome.completed and request.identity.operation == Operation.EXPORT:
+                outcome = await self._complete_export(outcome, self._cancel, expires)
             if self._cancel.is_set():
                 return Outcome(
                     request,
@@ -161,6 +225,106 @@ class Coordinator:
             self._cancel = None
             self._busy = False
             self._idle.set()
+
+    def _checked_publication(self, request):
+        options = parse_json(request.options_json.encode())
+        value = options.get("publication_directory")
+        if type(value) is not str:
+            raise ProtocolError()
+        path = Path(value)
+        expected = self._publication_directories.get(path)
+        if expected is None:
+            raise ProtocolError()
+        info = path.lstat()
+        if (
+            (info.st_dev, info.st_ino) != expected
+            or not stat.S_ISDIR(info.st_mode)
+            or info.st_uid != os.getuid()
+            or stat.S_IMODE(info.st_mode) != 0o700
+        ):
+            raise ProtocolError()
+        return path
+
+    def _validate_export(self, outcome):
+        request = outcome.request
+        staging = self._checked_publication(request)
+        options = parse_json(request.options_json.encode())
+        expected = ExportOptions(options.get("module_name"), options.get("version"))
+        artifacts = outcome.result.artifacts
+        if (
+            len(artifacts) != 1
+            or artifacts[0].name != f"{request.identity.operation_id}/export.json"
+        ):
+            raise ProtocolError()
+        receipt = parse_json(verify_artifact(self.root, artifacts[0]))
+        if (
+            type(receipt) is not dict
+            or set(receipt) != {"name", "size", "sha256"}
+            or receipt["name"] != expected.wheel_name
+        ):
+            raise ProtocolError()
+        artifact = Artifact("wheel.whl", receipt["size"], receipt["sha256"])
+        if not 0 < artifact.size <= 100 * 1024**2:
+            raise ProtocolError()
+        verify_artifact(staging, artifact)
+        return staging, expected.wheel_name
+
+    def _publish(self, staging, name):
+        """One non-yielding no-replace commit after the cancellation barrier."""
+        source = os.open(staging, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        destination = None
+        published = False
+        try:
+            destination = os.open(
+                staging.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+            )
+            original = os.stat("wheel.whl", dir_fd=source, follow_symlinks=False)
+            os.link(
+                "wheel.whl",
+                name,
+                src_dir_fd=source,
+                dst_dir_fd=destination,
+                follow_symlinks=False,
+            )
+            published = True
+            os.fsync(destination)
+        except OSError:
+            # Remove only the exact link this call just created, never a prior file.
+            if published:
+                current = os.stat(name, dir_fd=destination, follow_symlinks=False)
+                if (current.st_dev, current.st_ino) == (
+                    original.st_dev,
+                    original.st_ino,
+                ):
+                    os.unlink(name, dir_fd=destination)
+            raise
+        finally:
+            os.close(source)
+            if destination is not None:
+                os.close(destination)
+        return str(staging.parent / name)
+
+    async def _complete_export(self, outcome, cancellation, expires):
+        try:
+            (staging, name), interrupted = await _settle(
+                asyncio.create_task(asyncio.to_thread(self._validate_export, outcome))
+            )
+            if interrupted:
+                raise asyncio.CancelledError
+            if cancellation.is_set():
+                return replace(outcome, result=None, cancelled=True)
+            if time.monotonic() >= expires:
+                return replace(outcome, result=None, error_code="TIMEOUT")
+            self._checked_publication(outcome.request)
+            # No await between this barrier and publication/accepted outcome.
+            path = self._publish(staging, name)
+            return replace(outcome, published_path=path)
+        except FileExistsError:
+            return replace(outcome, result=None, error_code="EXPORT_EXISTS")
+        except DomainError as error:
+            return replace(outcome, result=None, error_code=error.code)
+        except OSError:
+            return replace(outcome, result=None, error_code="EXPORT_IO")
 
     async def run_many(
         self,
@@ -265,6 +429,8 @@ class Coordinator:
                 stderr_bytes = min(MAX_STDERR, stderr_bytes + len(chunk))
 
         try:
+            if request.identity.operation == Operation.EXPORT:
+                self._checked_publication(request)
 
             def verify_inputs():
                 for artifact in request.inputs:
