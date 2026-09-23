@@ -34,20 +34,13 @@ from mlforge.execution.protocol import (
     decode,
     encode,
     json_data,
+    output_names,
     parse_json,
     read_owned,
     verify_artifact,
     write_owned,
 )
 
-OUTPUTS = {
-    Operation.PARSE: ("dataset.json", "schema.json"),
-    Operation.INSPECT: ("schema.json",),
-    Operation.PREPARE: ("prepared.json",),
-    Operation.TRAIN: ("candidate.json", "schema.json", "metadata.json", "model.skops"),
-    Operation.PREDICT: ("predictions.json",),
-    Operation.EXPORT: ("export.json",),
-}
 INPUT_COUNTS = {
     Operation.PARSE: 0,
     Operation.INSPECT: 2,
@@ -73,12 +66,6 @@ OPTION_KEYS = {
 def _check(condition):
     if not condition:
         raise ProtocolError()
-
-
-def output_names(identity):
-    return tuple(
-        f"{identity.operation_id}/{name}" for name in OUTPUTS[identity.operation]
-    )
 
 
 def _json_input(root, artifact):

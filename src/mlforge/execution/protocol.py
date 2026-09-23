@@ -30,6 +30,22 @@ class Operation(StrEnum):
     EXPORT = "export"
 
 
+OUTPUTS = {
+    Operation.PARSE: ("dataset.json", "schema.json"),
+    Operation.INSPECT: ("schema.json",),
+    Operation.PREPARE: ("prepared.json",),
+    Operation.TRAIN: ("candidate.json", "schema.json", "metadata.json", "model.skops"),
+    Operation.PREDICT: ("predictions.json",),
+    Operation.EXPORT: ("export.json",),
+}
+
+
+def output_names(identity):
+    return tuple(
+        f"{identity.operation_id}/{name}" for name in OUTPUTS[identity.operation]
+    )
+
+
 class EventKind(StrEnum):
     STARTED = "started"
     PROGRESS = "progress"

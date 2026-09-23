@@ -1,7 +1,9 @@
 """Session commands and semantic acceptance; no widgets, fitting or process code."""
 
+import asyncio
 import uuid
 from dataclasses import replace
+from pathlib import Path
 
 from mlforge.application.state import (
     ActiveOperation,
@@ -13,8 +15,27 @@ from mlforge.application.state import (
     Session,
 )
 from mlforge.contracts import CandidateStatus, DomainError, ExperimentSpec, TaskKind
+from mlforge.datasets.records import (
+    ColumnType,
+    dataset_data,
+    dataset_from_data,
+    schema_data,
+    schema_from_data,
+)
 from mlforge.evaluation import ranked_candidates
-from mlforge.execution.protocol import EventKind, Identity, Operation
+from mlforge.execution.coordinator import Coordinator, _settle
+from mlforge.execution.protocol import (
+    MAX_FILE,
+    EventKind,
+    Identity,
+    Operation,
+    Request,
+    json_data,
+    output_names,
+    parse_json,
+    verify_artifact,
+    write_owned,
+)
 from mlforge.models import MODELS
 
 
@@ -27,13 +48,145 @@ class Service:
 
     def __init__(self):
         self._state = Session()
+        self._closing = False
+        self._coordinator = Coordinator()
+        self._idle = asyncio.Event()
+        self._idle.set()
+
+    async def __aenter__(self):
+        await self._coordinator.__aenter__()
+        return self
+
+    async def __aexit__(self, *exc):
+        await self.close()
+
+    async def close(self):
+        if self._state.activity == Activity.CLOSED:
+            return
+        self._closing = True
+        self.cancel()
+        self._state = replace(self._state, activity=Activity.CANCELLING)
+        _, interrupted = await _settle(asyncio.create_task(self._idle.wait()))
+        await self._coordinator.close()
+        self._closed()
+        if interrupted:
+            raise asyncio.CancelledError
+
+    async def _operate(self, identity, values, options, decode_result, accept):
+        """Adapt one concrete command; all model/data services run in the child."""
+        self._idle.clear()
+        try:
+
+            def inputs():
+                return tuple(
+                    write_owned(
+                        self._coordinator.root,
+                        f"input-{identity.operation_id}-{index}.json",
+                        json_data(value, MAX_FILE),
+                    )
+                    for index, value in enumerate(values())
+                )
+
+            artifacts, interrupted = await _settle(
+                asyncio.create_task(asyncio.to_thread(inputs))
+            )
+            if interrupted:
+                raise asyncio.CancelledError
+            if not self._current(identity):
+                return False
+            request = Request(
+                identity, artifacts, output_names(identity), json_data(options).decode()
+            )
+            outcome = await self._coordinator.run(request, on_event=self._event)
+            if not outcome.completed:
+                self._end_operation(identity, error_code=outcome.error_code)
+                return False
+
+            def decoded():
+                by_name = {a.name: a for a in outcome.result.artifacts}
+                values = tuple(
+                    parse_json(
+                        verify_artifact(self._coordinator.root, by_name[name]), MAX_FILE
+                    )
+                    for name in request.outputs
+                )
+                return decode_result(values)
+
+            value, interrupted = await _settle(
+                asyncio.create_task(asyncio.to_thread(decoded))
+            )
+            if interrupted:
+                raise asyncio.CancelledError
+            return accept(identity, *value)
+        except asyncio.CancelledError:
+            self.cancel()
+            raise
+        except (OSError, ValueError) as error:
+            self._end_operation(
+                identity,
+                error_code=error.code
+                if isinstance(error, DomainError)
+                else "STORAGE"
+                if isinstance(error, OSError)
+                else "PROTOCOL",
+            )
+            return False
+        finally:
+            self._end_operation(identity)
+            self._idle.set()
+
+    def _open_command(self, discard=False):
+        self._editable(discard)
+        if self._coordinator.root is None:
+            _error(
+                "SESSION",
+                "The session is not open.",
+                "Open the application session first.",
+            )
+
+    async def load(self, path, *, discard=False):
+        self._open_command(discard)
+        if "://" in str(path):
+            _error(
+                "LOCAL_FILE", "Choose a local file.", "Enter a file path, not a URL."
+            )
+        path = str(Path(path).expanduser().absolute())
+        identity = self._begin_operation(Operation.PARSE)
+        return await self._operate(
+            identity,
+            lambda: (),
+            {"path": path},
+            lambda values: (dataset_from_data(values[0]), schema_from_data(values[1])),
+            self._accept_dataset,
+        )
+
+    async def change_type(self, column_id, kind, *, discard=False):
+        self._open_command(discard)
+        if self._state.dataset is None or column_id not in {
+            c.id for c in self._state.dataset.columns
+        }:
+            _error("COLUMN", "Choose a current column.", "Return to Preview.")
+        kind = ColumnType(kind) if kind is not None else None
+        dataset, schema = self._state.dataset, self._state.schema
+
+        def values():
+            return dataset_data(dataset), schema_data(schema)
+
+        identity = self._begin_operation(Operation.INSPECT)
+        return await self._operate(
+            identity,
+            values,
+            {"column_id": column_id, "kind": kind.value if kind else None},
+            lambda values: (schema_from_data(values[0]),),
+            self._accept_schema,
+        )
 
     @property
     def snapshot(self):
         return self._state
 
     def _editable(self, discard=False):
-        if self._state.activity != Activity.IDLE:
+        if self._closing or self._state.activity != Activity.IDLE:
             _error(
                 "BUSY", "Configuration is locked.", "Cancel and wait before editing."
             )
@@ -387,6 +540,7 @@ class Service:
         return True
 
     def cancel(self):
+        self._coordinator.cancel()
         if self._state.activity == Activity.RUNNING:
             self._state = replace(self._state, activity=Activity.CANCELLING)
 
