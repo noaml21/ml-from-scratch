@@ -1,6 +1,5 @@
 """Local source selection; parsing belongs to the application worker."""
 
-import time
 from pathlib import Path
 
 from rich.text import Text
@@ -11,11 +10,10 @@ from textual.message import Message
 from textual.widgets import Button, Checkbox, DirectoryTree, Input, OptionList, Static
 from textual.widgets.option_list import Option
 
-from mlforge.application.state import Activity
 from mlforge.contracts import DomainError
 from mlforge.datasets.records import visible_text
 from mlforge.tui.screens.preview import Preview
-from mlforge.tui.screens.shell import Action, Frame
+from mlforge.tui.screens.shell import Action, Busy, Frame
 
 
 class Welcome(Frame):
@@ -276,42 +274,3 @@ class Examples(Source):
 
     def on_button_pressed(self, event: Button.Pressed):
         self.app.action_back()
-
-
-class Busy(Frame):
-    heading = "Loading dataset"
-    help_topic = "busy"
-    status = "Working locally. Help and cancellation remain available."
-
-    def __init__(self, filename):
-        super().__init__()
-        self.filename = visible_text(filename)
-
-    def content(self):
-        yield Static(self.filename, markup=False)
-        yield Static("Parsing data · 0.0s", id="progress", markup=False)
-
-    def actions(self):
-        yield Action("Cancel", id="cancel", variant="primary")
-
-    def on_mount(self):
-        self.started = time.monotonic()
-        self.query_one("#cancel").focus()
-        self.set_interval(0.1, self.update_progress)
-
-    def update_progress(self):
-        state = self.app.service.snapshot
-        phase = (
-            "Stopping…"
-            if state.activity == Activity.CANCELLING
-            else "Completed"
-            if state.activity == Activity.IDLE
-            else (state.active.phase if state.active else None) or "Parsing data"
-        )
-        marker = "·" if int((time.monotonic() - self.started) * 4) % 2 else "•"
-        self.query_one("#progress", Static).update(
-            f"{marker} {phase} · {time.monotonic() - self.started:.1f}s"
-        )
-
-    def on_button_pressed(self, event: Button.Pressed):
-        self.app.service.cancel()

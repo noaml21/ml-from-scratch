@@ -199,7 +199,10 @@ class Service:
             c.id for c in self._state.dataset.columns
         }:
             _error("COLUMN", "Choose a current column.", "Return to Preview.")
-        kind = ColumnType(kind) if kind is not None else None
+        try:
+            kind = ColumnType(kind) if kind is not None else None
+        except (ValueError, TypeError):
+            _error("TYPE", "Choose a supported type.", "Return to column types.")
         dataset, schema = self._state.dataset, self._state.schema
 
         def values():

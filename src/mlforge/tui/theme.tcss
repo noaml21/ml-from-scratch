@@ -152,3 +152,6 @@ DataTable > .datatable--fixed { background: $surface; color: $text; }
 #column-note { height: 1; color: $muted; }
 #column-note.warning { color: $warning; }
 #preview-label { height: 1; color: $muted; }
+
+Preview #actions { layout: grid; grid-size: 2; grid-rows: 1 1; grid-columns: 1fr 1fr; }
+TypeReview #types { max-height: 8; }

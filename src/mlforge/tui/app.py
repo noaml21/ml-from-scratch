@@ -10,7 +10,7 @@ from textual.widgets import Input, TextArea
 from mlforge.application.service import Service
 from mlforge.application.state import Activity
 from mlforge.tui.help import CATALOG
-from mlforge.tui.screens.dataset import Welcome
+from mlforge.tui.screens.dataset import Load, Welcome
 from mlforge.tui.screens.shell import Confirm, Help, ResizeGuard
 
 
@@ -98,6 +98,11 @@ class MLForgeApp(App):
         if topic not in CATALOG:
             topic = getattr(self.screen, "help_topic", "welcome")
         self.push_screen(Help(*CATALOG[topic]), lambda _: self._resume())
+
+    def return_to_load(self):
+        """Return to the existing chooser without replacing accepted session state."""
+        while not isinstance(self.screen, (Load, Welcome)):
+            self.pop_screen()
 
     def action_letter_back(self):
         self.action_back()

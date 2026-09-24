@@ -1,11 +1,14 @@
 """Bounded literal views over accepted canonical data; no inference in widgets."""
 
 from rich.text import Text
-from textual.widgets import Button, DataTable, Static
+from textual import work
+from textual.widgets import Button, DataTable, OptionList, Static
+from textual.widgets.option_list import Option
 
-from mlforge.datasets.records import preview, visible_text
+from mlforge.contracts import DomainError
+from mlforge.datasets.records import ColumnType, preview, visible_text
 from mlforge.tui.help import CATALOG
-from mlforge.tui.screens.shell import Action, Frame
+from mlforge.tui.screens.shell import Action, Busy, Frame
 
 WARNINGS = {
     "MIXED_KINDS": "Mixed scalar kinds; review the type before continuing.",
@@ -90,6 +93,7 @@ class Preview(Frame):
             )
         rows.move_cursor(column=1)
         columns.focus()
+        self.refresh_schema()
 
     def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted):
         if event.data_table.id != "columns":
@@ -152,8 +156,138 @@ class Preview(Frame):
     def on_data_table_row_selected(self, event: DataTable.RowSelected):
         self.app.action_help()
 
+    def refresh_schema(self):
+        state = self.app.service.snapshot
+        self.schema = state.schema
+        self.view = preview(self.dataset, self.schema, text_limit=80)
+        columns = self.query_one("#columns", DataTable)
+        for column in self.view["columns"]:
+            for key, value in {
+                "type": column["type"] + (" *" if column["overridden"] else ""),
+                "missing": (
+                    f"{column['missing_count']} ({column['missing_percent']:.1f}%)"
+                ),
+                "unique": str(column["distinct_count"]),
+                "samples": snippet(" · ".join(column["samples"]), 10),
+            }.items():
+                columns.update_cell(column["id"], key, value)
+        overrides = sum(p.overridden for p in self.schema.columns)
+        warnings = sum(bool(p.warnings) for p in self.schema.columns)
+        self.query_one("#summary", Static).update(
+            f"{len(self.dataset.rows):,} rows · {len(self.dataset.columns)} columns · "
+            f"{overrides} overrides · {warnings} columns with notes"
+        )
+        self.query_one("#correct", Button).disabled = state.confirmed
+        self.query_one("#status", Static).update(
+            "[x] Dataset confirmed. Chosen types accepted; ready to choose a goal."
+            if state.confirmed
+            else self.status
+        )
+        self.on_data_table_row_highlighted(
+            DataTable.RowHighlighted(
+                columns,
+                columns.cursor_row,
+                columns.ordered_rows[columns.cursor_row].key,
+            )
+        )
+
     def actions(self):
-        yield Action("Choose another dataset", id="another", variant="primary")
+        yield Action("Looks correct", id="correct", variant="primary")
+        yield Action("Change type", id="change-type")
+        yield Action("Choose another dataset", id="another")
+
+    def on_button_pressed(self, event: Button.Pressed):
+        if event.button.id == "change-type":
+            index = self.query_one("#columns", DataTable).cursor_row
+            self.app.push_screen(TypeReview(self, self.dataset.columns[index].id))
+        elif event.button.id == "correct":
+            self.app.service.confirm_schema()
+            self.refresh_schema()
+        else:
+            self.app.return_to_load()
+
+
+class TypeReview(Frame):
+    heading = "Change column type"
+    help_topic = "types"
+    status = (
+        "Enter applies a type. Reset restores detection; source values never change."
+    )
+
+    def __init__(self, owner, column_id):
+        super().__init__()
+        self.owner, self.column_id = owner, column_id
+
+    def content(self):
+        state = self.app.service.snapshot
+        column = next(c for c in state.dataset.columns if c.id == self.column_id)
+        profile = state.schema.profile(self.column_id)
+        yield Static(visible_text(column.name), markup=False)
+        yield Static(
+            f"Detected: {profile.detected.value} · Current: {profile.effective.value}",
+            markup=False,
+        )
+        yield OptionList(
+            *(
+                Option(
+                    f"{'[x]' if kind == profile.effective else '[ ]'} {kind.value}",
+                    id=kind.value,
+                )
+                for kind in ColumnType
+                if kind != ColumnType.UNKNOWN
+            ),
+            Option("Reset to detected type", id="reset"),
+            id="types",
+            markup=False,
+        )
+        yield Static(
+            "Category keeps lexical text; mixed JSON scalar kinds become strings.",
+            classes="muted",
+            markup=False,
+        )
+        yield Static("", id="error", classes="error", markup=False)
+
+    def on_mount(self):
+        choices = self.query_one("#types", OptionList)
+        profile = self.app.service.snapshot.schema.profile(self.column_id)
+        kinds = [kind for kind in ColumnType if kind != ColumnType.UNKNOWN]
+        choices.highlighted = (
+            kinds.index(profile.effective) if profile.effective in kinds else len(kinds)
+        )
+        choices.focus()
+
+    def actions(self):
+        yield Action("Back", id="back")
 
     def on_button_pressed(self, event: Button.Pressed):
         self.app.action_back()
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected):
+        self.apply_type(None if event.option_id == "reset" else event.option_id)
+
+    @work(group="schema", exclusive=True)
+    async def apply_type(self, kind):
+        await self.app.push_screen(
+            Busy("Checking every present value", heading="Checking column type")
+        )
+        try:
+            accepted = await self.app.service.change_type(self.column_id, kind)
+            failure = self.app.service.snapshot.failure
+            message = (
+                f"{failure.message} {failure.action}"
+                if failure
+                else "Change stopped. Choose a type or go Back."
+            )
+        except DomainError as error:
+            accepted, message = False, f"{error.message} {error.action}"
+
+        def finish():
+            self.app.pop_screen()
+            if accepted:
+                self.app.pop_screen()
+                self.owner.refresh_schema()
+            else:
+                self.query_one("#error", Static).update(f"Error: {message}")
+                self.query_one("#types").focus()
+
+        self.app.after_modal(finish)

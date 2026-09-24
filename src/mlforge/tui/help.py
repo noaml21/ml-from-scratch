@@ -35,6 +35,15 @@ CATALOG = {
         "such as NA remain values. Review types before confirming the dataset. "
         "Help and Back never change committed data.",
     ),
+    "types": (
+        "Column types",
+        "Every present value is checked before a type change is accepted. "
+        "Number, Boolean and Date must parse every value. Category and Identifier "
+        "keep original text. Unknown is diagnostic and cannot be selected. "
+        "Reset restores the detected type. Accepted changes invalidate prior "
+        "confirmation and dependent experiment choices; "
+        "failed changes keep the old schema.",
+    ),
     "busy": (
         "Local work in progress",
         "The operation runs in an owned child process. The elapsed timer "

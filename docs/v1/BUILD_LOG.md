@@ -452,3 +452,13 @@ Current pointer: [BUILD_STATE.md](BUILD_STATE.md). This file records historical 
 - Intended commit: feat(tui): inspect dataset rows and schema statistics. P06.2 complete, 17/30 top-level units. P06 is not yet phase-gated; both-Python CI will run against its completed candidate. Weekly quota 97% used: stop after verified push and durable checkpoint instead of starting the larger P06.3 flow.
 
 - Verified implementation 5bd024c33f07b02e981744961f225babe5c474dd pushed normally to origin/v1/mlforge; matching local/remote observed. Only external CLAUDE.md untracked. Per RESUME_PROTOCOL after-push/stop checkpoint, this evidence-only update records the actual SHA and leaves P06.3 as the exact next unit. No partial production work or running operations.
+
+## P06.3 starts — schema review, preparation and dataset gate
+- Reconciled f5a8ca9b8dcb5e52dc073450933a788dc15dc12d local/origin, only external CLAUDE.md untracked. P06.2 remains verified; no restart. Split P06.3 into (a) real override/reset/confirmation, (b) Prepare and error paths, (c) full local/install/visual/CI gate. 17/30 until the entire unit passes.
+- P06.3.a uses Service.change_type/confirm_schema, preserving accepted records and invalidation rules. Move shared Busy presentation to shell to avoid dataset↔preview import cycles; no lifecycle logic moves. Confirmation first establishes the authoritative accepted state; the P07 Goal screen will consume that state after the P06 gate.
+
+- P06.3.a focused schema/preview/architecture: 28 passed in 72.13s (27313 exit 0). An initial synthetic RowHighlighted call used swapped positional arguments; corrected to the pinned Textual API. Real invalid/empty overrides preserve old schema; reset clears dependent configuration and confirmation; table Enter opens help rather than confirming. Unsupported type arguments now map to DomainError at the application boundary.
+- Actual type/review captures at 80x24 and 100x30 inspected in color and monochrome: detected/current types, stable [x] selection, keyboard focus, reset and Back visible; preview shows override/note counts and explicit Looks correct. Shared Busy moved to shell without changing ownership. Subsystem check running (26464).
+
+## P06.3.a VERIFIED
+- Affected TUI/application commands/datasets/architecture: 143 passed in 166.27s (26464 exit 0), p06-types-subsystem.log. Ruff/format (101 files), planning and diff passed. No consumer/runtime change. Reviewed changed service type-error handling, shared shell/preview code, tests and guides. Commit: feat(tui): review and confirm dataset types. Continue P06.3.b immediately; 17/30 until the complete P06.3 gate.

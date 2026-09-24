@@ -1,10 +1,15 @@
 """Shared screen structure, help/confirmation and size guard."""
 
+import time
+
 from textual import events
 from textual.binding import Binding
 from textual.containers import Container, Horizontal, VerticalScroll
 from textual.screen import ModalScreen, Screen
 from textual.widgets import Button, Footer, Static
+
+from mlforge.application.state import Activity
+from mlforge.datasets.records import visible_text
 
 
 class Action(Button):
@@ -136,4 +141,44 @@ class ResizeGuard(Screen):
         )
 
     def action_cancel(self):
+        self.app.service.cancel()
+
+
+class Busy(Frame):
+    heading = "Loading dataset"
+    help_topic = "busy"
+    status = "Working locally. Help and cancellation remain available."
+
+    def __init__(self, filename, *, heading="Loading dataset"):
+        super().__init__()
+        self.filename = visible_text(filename)
+        self.heading = heading
+
+    def content(self):
+        yield Static(self.filename, markup=False)
+        yield Static(f"{self.heading} · 0.0s", id="progress", markup=False)
+
+    def actions(self):
+        yield Action("Cancel", id="cancel", variant="primary")
+
+    def on_mount(self):
+        self.started = time.monotonic()
+        self.query_one("#cancel").focus()
+        self.set_interval(0.1, self.update_progress)
+
+    def update_progress(self):
+        state = self.app.service.snapshot
+        phase = (
+            "Stopping…"
+            if state.activity == Activity.CANCELLING
+            else "Completed"
+            if state.activity == Activity.IDLE
+            else (state.active.phase if state.active else None) or self.heading
+        )
+        marker = "·" if int((time.monotonic() - self.started) * 4) % 2 else "•"
+        self.query_one("#progress", Static).update(
+            f"{marker} {phase} · {time.monotonic() - self.started:.1f}s"
+        )
+
+    def on_button_pressed(self, event: Button.Pressed):
         self.app.service.cancel()
