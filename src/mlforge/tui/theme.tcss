@@ -15,6 +15,7 @@ $pending: #AEC0CC;
 Screen {
     background: $background;
     color: $text;
+    align-horizontal: center;
 }
 #stage {
     height: 1;
@@ -22,8 +23,11 @@ Screen {
     background: $surface;
     color: $muted;
 }
+#body-region { height: 1fr; align-horizontal: center; }
 #body {
     height: 1fr;
+    width: 100%;
+    max-width: 100;
     padding: 1 2;
     scrollbar-color: $border;
     scrollbar-background: $surface;
@@ -43,6 +47,23 @@ Static {
     height: 2;
     padding: 0 2;
 }
+OptionList, LocalTree {
+    height: auto;
+    max-height: 12;
+    border: solid $border;
+    background: $surface;
+    color: $text;
+}
+OptionList:focus, LocalTree:focus { border: solid $accent; }
+OptionList > .option-list--option-highlighted,
+LocalTree > .tree--cursor {
+    background: $selected;
+    color: $text;
+    text-style: bold;
+}
+LocalTree { height: 10; }
+Checkbox { height: 1; border: none; padding: 0; margin: 1 0; }
+Checkbox:focus { background: $selected; color: $text; }
 #status {
     height: 1;
     padding: 0 2;
@@ -94,7 +115,8 @@ Input:focus {
     border: solid $accent;
 }
 Welcome #stage, Welcome #actions, Welcome #status { display: none; }
-Welcome #body { align: center middle; }
+Welcome #body-region { height: 1fr; align-horizontal: center; }
+#body { align: center middle; }
 Welcome Static { width: 100%; text-align: center; }
 Welcome .heading { color: $accent; }
 #begin { margin-top: 2; text-style: bold; }

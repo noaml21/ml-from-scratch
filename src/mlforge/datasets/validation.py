@@ -2,11 +2,10 @@
 
 import hashlib
 import json
-import unicodedata
 
 from mlforge.contracts import DomainError
 from mlforge.datasets.inference import interpreted, profile
-from mlforge.datasets.records import ColumnType, Schema, TabularDataset
+from mlforge.datasets.records import ColumnType, Schema, TabularDataset, visible_text
 
 
 def change_type(
@@ -71,16 +70,6 @@ def effective_fingerprint(dataset: TabularDataset, schema: Schema) -> str:
     return hashlib.sha256(
         json.dumps(payload, separators=(",", ":")).encode()
     ).hexdigest()
-
-
-def visible_text(text: str) -> str:
-    """Escape controls without markup interpretation or changing canonical cells."""
-    return "".join(
-        (f"\\u{ord(char):04x}" if ord(char) <= 0xFFFF else f"\\U{ord(char):08x}")
-        if unicodedata.category(char).startswith("C") or char in "\u2028\u2029"
-        else char
-        for char in text
-    )
 
 
 def preview(dataset: TabularDataset, schema: Schema) -> dict:

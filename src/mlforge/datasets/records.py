@@ -1,5 +1,6 @@
 """Immutable raw cells and separate effective schema; no file or ML services."""
 
+import unicodedata
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -120,7 +121,6 @@ def dataset_from_data(value):
     import json
     import math
     import re
-    import unicodedata
 
     record_keys(value, "columns rows source_format fingerprint ignored_blank_records")
     columns, rows = value["columns"], value["rows"]
@@ -257,3 +257,13 @@ def raw_records(
         }
         for row in rows
     ]
+
+
+def visible_text(text: str) -> str:
+    """Escape controls without markup interpretation or changing canonical cells."""
+    return "".join(
+        (f"\\u{ord(char):04x}" if ord(char) <= 0xFFFF else f"\\U{ord(char):08x}")
+        if unicodedata.category(char).startswith("C") or char in "\u2028\u2029"
+        else char
+        for char in text
+    )

@@ -11,7 +11,7 @@ from textual.widgets import Input, Static
 from mlforge.application.service import Service
 from mlforge.application.state import Activity
 from mlforge.tui.app import MLForgeApp
-from mlforge.tui.screens.dataset import Busy, Load, Preview, Welcome
+from mlforge.tui.screens.dataset import Busy, Load, PathEntry, Preview, Welcome
 from mlforge.tui.screens.shell import Confirm, Help, ResizeGuard
 
 
@@ -28,8 +28,8 @@ async def test_welcome_keyboard_help_focus_and_literal_input(size):
     async with app.run_test(size=size) as pilot:
         assert isinstance(app.screen, Welcome)
         assert "Press Enter" in str(app.screen.query_one("#begin", Static).content)
-        await pilot.press("enter")
-        assert isinstance(app.screen, Load)
+        await pilot.press("enter", "down", "enter")
+        assert isinstance(app.screen, PathEntry)
         field = app.screen.query_one("#path", Input)
         assert app.focused is field
         assert app.screen.active_bindings["f1"].binding.show
@@ -56,6 +56,8 @@ async def test_welcome_keyboard_help_focus_and_literal_input(size):
         await pilot.press("escape")
         assert app.focused.id == "load"
         await pilot.press("escape")
+        assert isinstance(app.screen, Load)
+        await pilot.press("escape")
         assert isinstance(app.screen, Welcome)
         root = service._coordinator.root
         await pilot.press("ctrl+q")
@@ -70,13 +72,13 @@ async def test_real_load_error_retry_summary_and_source_unchanged(tmp_path, size
     service = Service()
     app = MLForgeApp(service)
     async with app.run_test(size=size) as pilot:
-        await pilot.press("enter")
+        await pilot.press("enter", "down", "enter")
         field = app.screen.query_one("#path", Input)
         field.value = str(tmp_path / "missing.csv")
         await pilot.press("enter")
         async with asyncio.timeout(30):
             while not (
-                isinstance(app.screen, Load)
+                isinstance(app.screen, PathEntry)
                 and str(app.screen.query_one("#error", Static).content)
             ):
                 await asyncio.sleep(0.02)
@@ -97,7 +99,7 @@ async def test_real_load_error_retry_summary_and_source_unchanged(tmp_path, size
         await pilot.pause()  # The accepted screen must finish its first paint.
         assert "[bold]literal[/bold]" in app.export_screenshot()
         await pilot.press("escape")
-        assert isinstance(app.screen, Load) and field.value == str(source)
+        assert isinstance(app.screen, PathEntry) and field.value == str(source)
     assert source.read_text() == content
     assert service.snapshot.activity == Activity.CLOSED
 
@@ -105,7 +107,7 @@ async def test_real_load_error_retry_summary_and_source_unchanged(tmp_path, size
 async def test_resize_preserves_field_help_and_focus():
     app = MLForgeApp(Service())
     async with app.run_test(size=(100, 30)) as pilot:
-        await pilot.press("enter")
+        await pilot.press("enter", "down", "enter")
         field = app.screen.query_one("#path", Input)
         field.value = "unsubmitted 世界 file.csv"
         for size in [(80, 24), (79, 23), (100, 30)]:
@@ -114,7 +116,7 @@ async def test_resize_preserves_field_help_and_focus():
             if size == (79, 23):
                 assert isinstance(app.screen, ResizeGuard)
             else:
-                assert isinstance(app.screen, Load)
+                assert isinstance(app.screen, PathEntry)
                 assert app.focused is field
         assert field.value == "unsubmitted 世界 file.csv"
         await pilot.press("f1")
@@ -153,7 +155,7 @@ async def test_shell_capture_evidence(monochrome, monkeypatch):
         app = MLForgeApp(Service())
         async with app.run_test(size=(width, height)) as pilot:
             app.save_screenshot(f"welcome-{suffix}", path=str(destination))
-            await pilot.press("enter")
+            await pilot.press("enter", "down", "enter")
             app.save_screenshot(f"path-{suffix}", path=str(destination))
             await pilot.press("f1")
             app.save_screenshot(f"help-{suffix}", path=str(destination))
@@ -179,7 +181,7 @@ async def test_live_work_help_cancel_and_quit_default_keep(tmp_path, monkeypatch
     service = Service()
     app = MLForgeApp(service)
     async with app.run_test(size=(80, 24)) as pilot:
-        await pilot.press("enter")
+        await pilot.press("enter", "down", "enter")
         field = app.screen.query_one("#path", Input)
         field.value = str(tmp_path / "synthetic.csv")
         await pilot.press("enter")
@@ -226,7 +228,7 @@ async def test_completed_parse_waits_for_overlay_without_stealing_focus(
     monkeypatch.setattr(service, "load", held)
     app = MLForgeApp(service)
     async with app.run_test(size=(100, 30)) as pilot:
-        await pilot.press("enter")
+        await pilot.press("enter", "down", "enter")
         app.screen.query_one("#path", Input).value = str(source)
         await pilot.press("enter")
         await asyncio.wait_for(ready.wait(), 30)

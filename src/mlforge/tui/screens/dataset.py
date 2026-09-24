@@ -1,13 +1,19 @@
-"""Initial real manual-load route; parsing belongs to the application worker."""
+"""Local source selection; parsing belongs to the application worker."""
 
 import time
+from pathlib import Path
 
+from rich.text import Text
 from textual import work
 from textual.binding import Binding
-from textual.widgets import Button, Input, Static
+from textual.content import Content
+from textual.message import Message
+from textual.widgets import Button, Checkbox, DirectoryTree, Input, OptionList, Static
+from textual.widgets.option_list import Option
 
 from mlforge.application.state import Activity
 from mlforge.contracts import DomainError
+from mlforge.datasets.records import visible_text
 from mlforge.tui.screens.shell import Action, Frame
 
 
@@ -26,6 +32,73 @@ class Welcome(Frame):
 
 
 class Load(Frame):
+    heading = "Load dataset"
+    help_topic = "load"
+    status = "Choose a source. All data stays on your machine."
+
+    def content(self):
+        yield OptionList(
+            Option("Browse local files", id="browse"),
+            Option("Enter a path", id="path"),
+            Option("Example dataset", id="examples"),
+            id="sources",
+            markup=False,
+        )
+
+    def actions(self):
+        yield Action("Back", id="back")
+
+    def on_mount(self):
+        self.query_one("#sources").focus()
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected):
+        screen = {"browse": Browse, "path": PathEntry, "examples": Examples}[
+            event.option_id
+        ]
+        self.app.push_screen(screen())
+
+    def on_button_pressed(self, event: Button.Pressed):
+        self.app.action_back()
+
+
+class Source(Frame):
+    help_topic = "load"
+    primary_id = "path"
+
+    def fail(self, message):
+        self.query_one("#error", Static).update(f"Error: {message}")
+        self.query_one(f"#{self.primary_id}").focus()
+
+    @work(group="dataset", exclusive=True)
+    async def load(self, path, *, example=False):
+        await self.app.push_screen(Busy(Path(path).name))
+        try:
+            accepted = (
+                await self.app.service.load_example(path)
+                if example
+                else await self.app.service.load(path)
+            )
+            failure = self.app.service.snapshot.failure
+            message = (
+                f"{failure.message} {failure.action}"
+                if failure
+                else "Loading stopped. Choose a source or retry the selection."
+            )
+        except DomainError as error:
+            accepted = False
+            message = f"{error.message} {error.action}"
+
+        def finish():
+            if accepted:
+                self.app.switch_screen(Preview())
+            else:
+                self.app.pop_screen()
+                self.fail(message)
+
+        self.app.after_modal(finish)
+
+
+class PathEntry(Source):
     heading = "Load dataset"
     help_topic = "load"
     status = "Choose a local file. Your original data stays unchanged."
@@ -63,29 +136,145 @@ class Load(Frame):
         self.query_one("#error", Static).update("")
         self.load(path)
 
-    @work(group="dataset", exclusive=True)
-    async def load(self, path):
-        await self.app.push_screen(Busy())
+
+class LocalTree(DirectoryTree):
+    """Native lazy directory loading, literal labels and explicit read errors."""
+
+    class Unreadable(Message):
+        pass
+
+    def __init__(self, path, extensions, **kwargs):
+        self.extensions = extensions
+        self.show_hidden = False
+        super().__init__(path, **kwargs)
+
+    def filter_paths(self, paths):
+        for path in paths:
+            if not self.show_hidden and path.name.startswith("."):
+                continue
+            try:
+                if path.is_dir() or path.suffix.lower() in self.extensions:
+                    yield path
+            except OSError:
+                continue
+
+    def _directory_content(self, location, worker):
         try:
-            accepted = await self.app.service.load(path)
-            failure = self.app.service.snapshot.failure
-            message = (
-                f"{failure.message} {failure.action}"
-                if failure
-                else "Loading stopped. Edit the path or choose Load dataset to retry."
-            )
-        except DomainError as error:
-            accepted = False
-            message = f"{error.message} {error.action}"
+            for path in location.iterdir():
+                if worker.is_cancelled:
+                    break
+                yield path
+        except OSError:
+            self.post_message(self.Unreadable())
 
-        def finish():
-            if accepted:
-                self.app.switch_screen(Preview())
-            else:
-                self.app.pop_screen()
-                self.fail(message)
+    def render_label(self, node, base_style, style):
+        path = node.data.path if node.data else Path("")
+        prefix = (
+            ("[-] " if node.is_expanded else "[+] ") if node.allow_expand else "    "
+        )
+        return Text(
+            prefix + visible_text(path.name or str(path)), style=base_style + style
+        )
 
-        self.app.after_modal(finish)
+
+class HiddenFiles(Checkbox):
+    """Keep checked state explicit even when terminal color is unavailable."""
+
+    @property
+    def _button(self):
+        return Content("[x]" if self.value else "[ ]")
+
+
+class Browse(Source):
+    heading = "Browse local files"
+    primary_id = "files"
+    status = "Enter opens a folder or loads a file. Parent folder goes up one level."
+
+    def content(self):
+        yield Static(visible_text(str(Path.cwd())), id="directory", markup=False)
+        yield HiddenFiles("Show hidden files", id="hidden")
+        yield LocalTree(
+            Path.cwd(),
+            tuple(item.extension for item in self.app.service.formats),
+            id="files",
+        )
+        yield Static("", id="error", classes="error", markup=False)
+
+    def actions(self):
+        yield Action("Parent folder", id="parent", variant="primary")
+        yield Action("Back", id="back")
+
+    def on_mount(self):
+        self.query_one("#files").focus()
+
+    def on_checkbox_changed(self, event: Checkbox.Changed):
+        tree = self.query_one("#files", LocalTree)
+        tree.show_hidden = event.value
+        tree.reload()
+
+    def on_local_tree_unreadable(self, event: LocalTree.Unreadable):
+        self.fail("Directory is unreadable. Choose Parent folder or go Back.")
+
+    def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected):
+        self.load(event.path)
+
+    def on_directory_tree_directory_selected(
+        self, event: DirectoryTree.DirectorySelected
+    ):
+        tree = self.query_one("#files", LocalTree)
+        if tree.path != event.path:
+            tree.path = event.path
+        self.query_one("#directory", Static).update(visible_text(str(event.path)))
+        self.query_one("#error", Static).update("")
+
+    def on_button_pressed(self, event: Button.Pressed):
+        if event.button.id == "parent":
+            tree = self.query_one("#files", LocalTree)
+            tree.path = tree.path.parent
+            self.query_one("#directory", Static).update(visible_text(str(tree.path)))
+            self.query_one("#error", Static).update("")
+            tree.focus()
+        else:
+            self.app.action_back()
+
+
+class Examples(Source):
+    heading = "Example dataset"
+    primary_id = "examples"
+    status = "Synthetic data. Examples use the same import and schema checks."
+
+    def content(self):
+        yield OptionList(
+            *(
+                Option(item.label, id=item.filename)
+                for item in self.app.service.examples
+            ),
+            id="examples",
+            markup=False,
+        )
+        yield Static("", id="example-detail", classes="muted", markup=False)
+        yield Static("", id="error", classes="error", markup=False)
+
+    def actions(self):
+        yield Action("Back", id="back")
+
+    def on_mount(self):
+        self.query_one("#examples").focus()
+
+    def on_option_list_option_highlighted(self, event: OptionList.OptionHighlighted):
+        example = next(
+            e for e in self.app.service.examples if e.filename == event.option_id
+        )
+        format_name = Path(example.filename).suffix[1:].upper()
+        self.query_one("#example-detail", Static).update(
+            f"Synthetic · {example.task.value} · {format_name}"
+        )
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected):
+        self.load(event.option_id, example=True)
+
+    def on_button_pressed(self, event: Button.Pressed):
+        self.app.action_back()
 
 
 class Busy(Frame):
@@ -93,7 +282,12 @@ class Busy(Frame):
     help_topic = "busy"
     status = "Working locally. Help and cancellation remain available."
 
+    def __init__(self, filename):
+        super().__init__()
+        self.filename = visible_text(filename)
+
     def content(self):
+        yield Static(self.filename, markup=False)
         yield Static("Parsing data · 0.0s", id="progress", markup=False)
 
     def actions(self):

@@ -12,6 +12,9 @@ CATALOG = {
     ),
     "load": (
         "Load a local dataset",
+        "Browse local folders, enter a path, or select a synthetic example. "
+        "The picker starts in the working directory; hidden files require its "
+        "explicit toggle. Parent folder moves up one level. "
         "Use a UTF-8 CSV, TSV, or flat JSONL file. Paths may contain spaces "
         "or Unicode. Relative paths start at the current working directory; "
         "~/ expands to your home directory. Shell commands and environment "

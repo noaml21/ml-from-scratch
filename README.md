@@ -11,7 +11,8 @@ Read [How it works](docs/HOW_IT_WORKS.md) for the system flow and
 The `v1/mlforge` branch is under construction. Packaging and noninteractive
 `mlforge --help` / `mlforge --version`, headless dataset/schema services, synthetic
 examples, six-model fitting/evaluation and standalone model export are implemented;
-the Textual shell now supports a real manual-file load and summary.
+the Textual shell supports local browsing, manual paths, packaged examples and a
+preliminary dataset summary. Full preview/schema controls remain in progress.
 The complete dataset review and training/export screens are still in progress. Current progress and verification are in
 [BUILD_STATE](docs/v1/BUILD_STATE.md). The educational algorithms below remain supported.
 

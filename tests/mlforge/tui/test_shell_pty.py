@@ -51,6 +51,8 @@ def test_entrypoint_restores_terminal_after_recoverable_error(tmp_path, exit_key
     try:
         read_until(b"Press Enter to begin")
         os.write(master, b"\r")
+        read_until(b"Browse local files")
+        os.write(master, b"\x1b[B\r")
         read_until(b"Enter a local file path")
         os.write(master, str(tmp_path / "absent.csv").encode() + b"\r")
         read_until(b"Error:")

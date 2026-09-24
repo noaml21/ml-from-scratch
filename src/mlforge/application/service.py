@@ -4,6 +4,7 @@ import asyncio
 import time
 import uuid
 from dataclasses import replace
+from importlib.resources import as_file, files
 from pathlib import Path
 
 from mlforge.application import artifacts
@@ -26,6 +27,7 @@ from mlforge.contracts import (
     ExportOptions,
     TaskKind,
 )
+from mlforge.datasets.importers import EXAMPLES, FORMATS
 from mlforge.datasets.records import (
     ColumnType,
     dataset_data,
@@ -57,6 +59,9 @@ def _error(code, message, action):
 
 class Service:
     """One authoritative in-memory session, exposed only through frozen snapshots."""
+
+    formats = FORMATS
+    examples = EXAMPLES
 
     def __init__(self):
         self._state = Session()
@@ -181,6 +186,12 @@ class Service:
             lambda values: (dataset_from_data(values[0]), schema_from_data(values[1])),
             self._accept_dataset,
         )
+
+    async def load_example(self, filename, *, discard=False):
+        if filename not in {example.filename for example in self.examples}:
+            _error("EXAMPLE", "Choose a packaged example.", "Return to examples.")
+        with as_file(files("mlforge").joinpath("examples", filename)) as path:
+            return await self.load(path, discard=discard)
 
     async def change_type(self, column_id, kind, *, discard=False):
         self._open_command(discard)

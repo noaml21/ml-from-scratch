@@ -56,9 +56,10 @@ class Frame(Screen):
             id="stage",
             markup=False,
         )
-        with VerticalScroll(id="body", can_focus=False):
-            yield Static(self.heading, classes="heading", markup=False)
-            yield from self.content()
+        with Container(id="body-region"):
+            with VerticalScroll(id="body", can_focus=False):
+                yield Static(self.heading, classes="heading", markup=False)
+                yield from self.content()
         with Horizontal(id="actions"):
             yield from self.actions()
         yield Static(self.status, id="status", markup=False)

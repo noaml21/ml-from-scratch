@@ -46,7 +46,7 @@ The table lists permitted first-party dependencies across module boundaries. Imp
 | execution.protocol | contracts |
 | execution.coordinator | contracts, execution.protocol |
 | execution.worker | contracts, execution.protocol, datasets, tasks, preprocessing, models, training, evaluation, prediction, export |
-| application | contracts, datasets.records, datasets.importers (format descriptors), tasks, models, evaluation (ranking), execution.coordinator, execution.protocol |
+| application | contracts, datasets.records, datasets.importers (format/example descriptors), tasks, models, evaluation (ranking), execution.coordinator, execution.protocol |
 | tui | application, contracts, datasets.records; never execution/core service entrypoints |
 | __main__ | application, tui; explicit composition only |
 
@@ -174,3 +174,5 @@ The existing raw-row projection helper now lives in datasets.records (also impor
 
 ## P06.1 implemented shell
 The existing bootstrap composes `MLForgeApp(Service())`. Presentation owns screens, focus, help, unsubmitted path text and a temporary resize screen; Service remains the authoritative dataset/run owner. The app opens the service on mount and awaits its cleanup before exit and on unmount. Manual load runs the existing async Service command in a Textual worker, and defers navigation while help/resize owns focus. The shared theme resource is included in application packages. The full dataset preview/picker/schema/Prepare journey follows in P06.2/P06.3; this shell slice is not the P06 phase gate.
+
+P06 source screens consume application-exposed format/example descriptors. `Service.load_example` resolves only allowlisted package resources and delegates to ordinary load. The shared stdlib-only `datasets.records.visible_text` helper escapes controls for presentation without touching canonical cell values; `datasets.validation` reuses it. No TUI import of importer/validation services is added.
