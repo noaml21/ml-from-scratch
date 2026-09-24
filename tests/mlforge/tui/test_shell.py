@@ -92,12 +92,12 @@ async def test_real_load_error_retry_summary_and_source_unchanged(tmp_path, size
         assert "2 rows · 2 columns" in str(
             app.screen.query_one("#summary", Static).content
         )
-        assert any(
-            "[bold]literal[/bold]" in str(widget.content)
-            for widget in app.screen.query(Static)
-        )
+        assert app.screen.view["columns"][0]["name"] == "[bold]literal[/bold]"
         await pilot.pause()  # The accepted screen must finish its first paint.
-        assert "[bold]literal[/bold]" in app.export_screenshot()
+        assert "[bold]literal" in app.export_screenshot()
+        await pilot.press("question_mark")
+        assert "[bold]literal[/bold]" in app.screen.body_text
+        await pilot.press("escape")
         await pilot.press("escape")
         assert isinstance(app.screen, PathEntry) and field.value == str(source)
     assert source.read_text() == content

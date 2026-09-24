@@ -90,6 +90,10 @@ class MLForgeApp(App):
     def action_help(self):
         if isinstance(self.screen, (ModalScreen, ResizeGuard)):
             return
+        detail = getattr(self.screen, "context_help", lambda _: None)(self.focused)
+        if detail is not None:
+            self.push_screen(Help(*detail), lambda _: self._resume())
+            return
         topic = getattr(self.focused, "id", None)
         if topic not in CATALOG:
             topic = getattr(self.screen, "help_topic", "welcome")

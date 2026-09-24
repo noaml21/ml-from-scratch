@@ -116,7 +116,7 @@ Input:focus {
 }
 Welcome #stage, Welcome #actions, Welcome #status { display: none; }
 Welcome #body-region { height: 1fr; align-horizontal: center; }
-#body { align: center middle; }
+Welcome #body { align: center middle; }
 Welcome Static { width: 100%; text-align: center; }
 Welcome .heading { color: $accent; }
 #begin { margin-top: 2; text-style: bold; }
@@ -139,3 +139,16 @@ Help, Confirm { align: center middle; background: $background 70%; }
 .dialog-body:focus { border-left: solid $accent; }
 .dialog-actions { padding: 0; height: 1; }
 ResizeGuard { padding: 1 2; }
+
+Preview #body { max-width: 100%; }
+Preview .heading { margin-bottom: 0; }
+DataTable { background: $surface; color: $text; border: solid $border; }
+DataTable:focus { border: solid $accent; }
+DataTable > .datatable--header { background: $elevated; color: $text; text-style: bold; }
+DataTable > .datatable--cursor { background: $selected; color: $text; text-style: bold; }
+DataTable > .datatable--fixed { background: $surface; color: $text; }
+#columns { height: 6; }
+#rows { height: 1fr; min-height: 5; }
+#column-note { height: 1; color: $muted; }
+#column-note.warning { color: $warning; }
+#preview-label { height: 1; color: $muted; }

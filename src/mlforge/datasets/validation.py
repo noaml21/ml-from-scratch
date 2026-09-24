@@ -5,7 +5,9 @@ import json
 
 from mlforge.contracts import DomainError
 from mlforge.datasets.inference import interpreted, profile
-from mlforge.datasets.records import ColumnType, Schema, TabularDataset, visible_text
+from mlforge.datasets.records import ColumnType, Schema, TabularDataset
+from mlforge.datasets.records import preview as preview
+from mlforge.datasets.records import visible_text as visible_text
 
 
 def change_type(
@@ -70,32 +72,3 @@ def effective_fingerprint(dataset: TabularDataset, schema: Schema) -> str:
     return hashlib.sha256(
         json.dumps(payload, separators=(",", ":")).encode()
     ).hexdigest()
-
-
-def preview(dataset: TabularDataset, schema: Schema) -> dict:
-    count = len(dataset.rows)
-    return {
-        "row_count": count,
-        "column_count": len(dataset.columns),
-        "shown_rows": min(50, count),
-        "label": f"First {min(50, count)} of {count} rows",
-        "columns": [
-            {
-                "id": c.id,
-                "name": visible_text(c.name),
-                "type": p.effective.value,
-                "detected": p.detected.value,
-                "overridden": p.overridden,
-                "missing_count": p.missing_count,
-                "missing_percent": 100 * p.missing_count / count,
-                "distinct_count": p.distinct_count,
-                "samples": [visible_text(s) for s in p.samples],
-                "warnings": list(p.warnings),
-            }
-            for c, p in zip(dataset.columns, schema.columns, strict=True)
-        ],
-        "rows": [
-            [None if cell.missing else visible_text(cell.raw_text) for cell in row]
-            for row in dataset.rows[:50]
-        ],
-    }

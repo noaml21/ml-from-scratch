@@ -267,3 +267,41 @@ def visible_text(text: str) -> str:
         else char
         for char in text
     )
+
+
+def preview(
+    dataset: TabularDataset, schema: Schema, *, text_limit: int | None = None
+) -> dict:
+    """Pure display projection; optional snippets never alter canonical values."""
+
+    def display(value):
+        if text_limit is not None and len(value) > text_limit:
+            return visible_text(value[:text_limit]) + "…"
+        return visible_text(value)
+
+    count = len(dataset.rows)
+    return {
+        "row_count": count,
+        "column_count": len(dataset.columns),
+        "shown_rows": min(50, count),
+        "label": f"First {min(50, count)} of {count} rows",
+        "columns": [
+            {
+                "id": c.id,
+                "name": display(c.name),
+                "type": p.effective.value,
+                "detected": p.detected.value,
+                "overridden": p.overridden,
+                "missing_count": p.missing_count,
+                "missing_percent": 100 * p.missing_count / count,
+                "distinct_count": p.distinct_count,
+                "samples": [display(s) for s in p.samples],
+                "warnings": list(p.warnings),
+            }
+            for c, p in zip(dataset.columns, schema.columns, strict=True)
+        ],
+        "rows": [
+            [None if cell.missing else display(cell.raw_text) for cell in row]
+            for row in dataset.rows[:50]
+        ],
+    }

@@ -14,6 +14,7 @@ from textual.widgets.option_list import Option
 from mlforge.application.state import Activity
 from mlforge.contracts import DomainError
 from mlforge.datasets.records import visible_text
+from mlforge.tui.screens.preview import Preview
 from mlforge.tui.screens.shell import Action, Frame
 
 
@@ -314,31 +315,3 @@ class Busy(Frame):
 
     def on_button_pressed(self, event: Button.Pressed):
         self.app.service.cancel()
-
-
-class Preview(Frame):
-    heading = "Review your dataset"
-    help_topic = "preview"
-    status = "Review the column types before confirming this dataset."
-
-    def content(self):
-        state = self.app.service.snapshot
-        yield Static(
-            f"{len(state.dataset.rows):,} rows · {len(state.dataset.columns)} columns",
-            id="summary",
-            markup=False,
-        )
-        for column, profile in zip(
-            state.dataset.columns, state.schema.columns, strict=True
-        ):
-            yield Static(
-                f"{column.name} · {profile.effective.value} · "
-                f"{profile.missing_count} missing",
-                markup=False,
-            )
-
-    def actions(self):
-        yield Action("Choose another dataset", id="another", variant="primary")
-
-    def on_button_pressed(self, event: Button.Pressed):
-        self.app.action_back()
