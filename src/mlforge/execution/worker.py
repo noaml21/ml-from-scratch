@@ -199,7 +199,14 @@ def _export(root, request, options, progress):
 
     progress("exporting")
     bundle, records = _bundle_inputs(root, request)
-    _check(all(type(value) is str and len(value) <= 4096 for value in options.values()))
+    _check(
+        all(
+            type(options[key]) is str and len(options[key]) <= 4096
+            for key in ("module_name", "version", "publication_directory")
+        )
+    )
+    partial_run = options.get("partial_run", False)
+    _check(type(partial_run) is bool)
     publication = Path(options["publication_directory"])
     _check(publication.is_absolute())
     descriptor = os.open(publication, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
@@ -214,6 +221,7 @@ def _export(root, request, options, progress):
         options["module_name"],
         options["version"],
         records,
+        partial_run=partial_run,
     )
     # The worker only stages bytes; final destination publication belongs to parent.
     os.link(wheel, publication / "wheel.whl", follow_symlinks=False)
@@ -265,7 +273,14 @@ def execute(root, operation_id, emit):
         _check(request.outputs == output_names(request.identity))
         _check(len(request.inputs) == INPUT_COUNTS[request.identity.operation])
         options = parse_json(request.options_json.encode())
-        _check(set(options) == OPTION_KEYS[request.identity.operation])
+        allowed = OPTION_KEYS[request.identity.operation]
+        _check(
+            set(options) == allowed
+            or (
+                request.identity.operation == Operation.EXPORT
+                and set(options) == allowed | {"partial_run"}
+            )
+        )
         # Hold the checked root's descriptor as cwd. Replacing a pathname cannot
         # redirect service writes through an unexpected new root or symlink.
         root_fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)

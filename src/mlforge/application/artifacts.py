@@ -133,3 +133,55 @@ def failure_result(root, outcome):
         return Failure(**value)
     except (OSError, ValueError, KeyError, TypeError):
         return fallback
+
+
+def bundle_inputs(root, identity, refs, records):
+    probes = write_owned(
+        root, f"probes-{identity.operation_id}.json", json_data(records, MAX_FILE)
+    )
+    return (*refs, probes)
+
+
+def prediction_result(root, outcome, task, count, option):
+    from mlforge.contracts import TaskKind
+
+    value = parse_json(verify_artifact(root, outcome.result.artifacts[0]), MAX_FILE)
+    if type(value) is not list or len(value) != count:
+        raise ProtocolError()
+    key = (
+        "components"
+        if task == TaskKind.REDUCTION
+        else "cluster"
+        if task == TaskKind.CLUSTERING
+        else "prediction"
+    )
+    for row in value:
+        record_keys(row, f"{key} warnings")
+        result = row[key]
+        if task == TaskKind.CLASSIFICATION:
+            record_text(result)
+        elif task == TaskKind.CLUSTERING:
+            record_count(result, option - 1)
+        elif task == TaskKind.REDUCTION:
+            if (
+                type(result) is not list
+                or len(result) != option
+                or any(type(v) not in (float, int) for v in result)
+            ):
+                raise ProtocolError()
+        elif type(result) not in (float, int):
+            raise ProtocolError()
+        if type(row["warnings"]) is not list or len(row["warnings"]) > 200:
+            raise ProtocolError()
+        for warning in row["warnings"]:
+            record_keys(warning, "code field message")
+            if warning["code"] not in {
+                "MISSING_IMPUTED",
+                "UNKNOWN_CATEGORY",
+                "OUTSIDE_TRAINING_RANGE",
+            }:
+                raise ProtocolError()
+            record_text(warning["message"])
+            if warning["field"] is not None:
+                record_text(warning["field"])
+    return json_data(value, MAX_FILE).decode()

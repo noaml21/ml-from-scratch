@@ -228,6 +228,7 @@ def train_candidate(
             diagnostics=json.loads(assessed.diagnostics_json),
             warnings=notes,
             acknowledgements=spec.acknowledgements,
+            split_policy=json.loads(prepared.policy_json)["split"],
         )
         Predictor._from_directory(directory)
     except DomainError:

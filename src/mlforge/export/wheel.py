@@ -58,7 +58,9 @@ operation = (
     if model.metadata['task'] == 'reduction' else model.predict_many
 )
 with open(sys.argv[4], 'w', encoding='utf-8') as stream:
-    json.dump(operation(probes), stream, allow_nan=False)
+    json.dump([item for start in range(0, len(probes), 1000)
+               for item in operation(probes[start:start + 1000])],
+              stream, allow_nan=False)
 """
 
 
@@ -228,15 +230,38 @@ No license grant or publication is implied by this local artifact.
 """
 
 
+def verification_probes(fields, records):
+    """Retain observed inputs and test missing/unseen normalization without fitting."""
+    if not isinstance(records, (list, tuple)) or not 1 <= len(records) <= 1000:
+        raise ValueError("Export verification requires 1–1000 observed probe inputs")
+    probes = [dict(record) for record in records]
+    probes.append({field["name"]: None for field in fields})
+    unknown = dict(probes[0])
+    categories = [field for field in fields if field["type"] == "Category"]
+    for field in categories:
+        known = set(field["categories"])
+        index = 0
+        while (value := f"__mlforge_unknown_{index}__") in known:
+            index += 1
+        unknown[field["name"]] = value
+    if categories:
+        probes.append(unknown)
+    return probes
+
+
 def export_wheel(
     bundle: ModelBundle,
     destination: Path,
     module_name: str,
     version: str,
     probes: list[dict],
+    *,
+    partial_run: bool = False,
 ) -> Path:
     """Called in an owned operation child; descendants inherit its process group."""
     validate_options(module_name, version)
+    if type(partial_run) is not bool:
+        raise ValueError("Partial run context must be Boolean")
     destination = destination.expanduser().resolve()
     final = destination / f"{wheel_stem(module_name, version)}-py3-none-any.whl"
     if final.exists():
@@ -256,14 +281,19 @@ def export_wheel(
         raise ArtifactError(
             "BUNDLE_CHANGED: accepted model no longer matches its handle"
         )
-    if not probes:
-        raise ValueError("Export verification requires an observed probe input")
+    fields = json.loads((source / "schema.json").read_bytes())["fields"]
+    probes = verification_probes(fields, probes)
     operation = (
         predictor.transform_many
         if meta["task"] == "reduction"
         else predictor.predict_many
     )
-    expected = operation(probes)
+    expected = [
+        item
+        for start in range(0, len(probes), 1000)
+        for item in operation(probes[start : start + 1000])
+    ]
+    meta["partial_run"] = meta["partial_run"] or partial_run
     env = dict(os.environ, PIP_NO_INDEX="1", PIP_DISABLE_PIP_VERSION_CHECK="1")
     env.pop("PYTHONPATH", None)
     try:
@@ -294,6 +324,9 @@ def export_wheel(
             ):
                 raise ArtifactError("BUNDLE_CHANGED: resources changed during export")
             fields = json.loads(schema_data)["fields"]
+            metadata_data = (
+                json.dumps(meta, allow_nan=False, sort_keys=True) + "\n"
+            ).encode()
             for name, data in (
                 ("__init__.py", init),
                 ("_runtime.py", runtime),

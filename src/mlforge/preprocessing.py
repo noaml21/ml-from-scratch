@@ -10,7 +10,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from mlforge.contracts import DomainError, ExperimentSpec, PreparedRun, TaskKind
-from mlforge.datasets.records import Schema, TabularDataset
+from mlforge.datasets.records import Schema, TabularDataset, raw_records
 from mlforge.prediction.runtime import (
     MISSING,
     InputValidationError,
@@ -33,22 +33,6 @@ def input_fields(
             "type": schema.profile(column_id).effective.value,
         }
         for column_id in feature_ids
-    ]
-
-
-def raw_records(
-    dataset: TabularDataset, feature_ids: tuple[str, ...], rows: tuple[int, ...]
-) -> list[dict]:
-    indices = {column.id: index for index, column in enumerate(dataset.columns)}
-    chosen = [indices[column_id] for column_id in feature_ids]
-    return [
-        {
-            dataset.columns[index].name: None
-            if dataset.rows[row][index].missing
-            else dataset.rows[row][index].raw_text
-            for index in chosen
-        }
-        for row in rows
     ]
 
 

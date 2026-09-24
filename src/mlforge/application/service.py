@@ -12,6 +12,7 @@ from mlforge.application.state import (
     Activity,
     Configuration,
     Failure,
+    Prediction,
     Revisions,
     Run,
     RunStatus,
@@ -22,12 +23,14 @@ from mlforge.contracts import (
     CandidateStatus,
     DomainError,
     ExperimentSpec,
+    ExportOptions,
     TaskKind,
 )
 from mlforge.datasets.records import (
     ColumnType,
     dataset_data,
     dataset_from_data,
+    raw_records,
     schema_data,
     schema_from_data,
 )
@@ -233,6 +236,8 @@ class Service:
             error_code=None,
             failure=None,
             exported_path=None,
+            export_options=None,
+            prediction=None,
         )
 
     def confirm_schema(self):
@@ -380,6 +385,8 @@ class Service:
             error_code=None,
             failure=None,
             exported_path=None,
+            export_options=None,
+            prediction=None,
         )
         return run
 
@@ -404,7 +411,11 @@ class Service:
         if training and (run is None or run.status != RunStatus.RUNNING):
             _error("RUN", "No current training run.", "Start training from Models.")
         identity = Identity(
-            run.id if training else uuid.uuid4().hex,
+            run.id
+            if run is not None
+            and operation
+            in {Operation.PREPARE, Operation.TRAIN, Operation.PREDICT, Operation.EXPORT}
+            else uuid.uuid4().hex,
             self._state.revisions.experiment,
             uuid.uuid4().hex,
             operation,
@@ -785,6 +796,154 @@ class Service:
             self._idle.set()
         return self._state.run.status == RunStatus.COMPLETED
 
+    def _selected_bundle(self):
+        self._open_command(discard=True)
+        selected = self._state.selected
+        run = self._state.run
+        if (
+            selected is None
+            or run is None
+            or run.revisions != self._state.revisions
+            or run.status not in (RunStatus.COMPLETED, RunStatus.PARTIAL)
+            or selected.model_id not in self._bundles
+        ):
+            _error("RESULT", "Choose a completed current model.", "Return to Results.")
+        return selected, self._bundles[selected.model_id]
+
+    async def predict(self, records):
+        selected, refs = self._selected_bundle()
+        if type(records) not in (list, tuple) or len(records) > 1000:
+            _error(
+                "PREDICT_INPUT", "Provide at most 1000 records.", "Correct the inputs."
+            )
+        records = [dict(row) if type(row) is dict else row for row in records]
+        identity = self._begin_operation(Operation.PREDICT, selected.model_id)
+        self._state = replace(self._state, prediction=None)
+        self._idle.clear()
+        try:
+            inputs = await self._io(
+                artifacts.bundle_inputs, self._coordinator.root, identity, refs, records
+            )
+            if not self._current(identity):
+                return None
+            outcome = await self._coordinator.run(
+                Request(identity, inputs, output_names(identity)), on_event=self._event
+            )
+            if not outcome.completed:
+                if not outcome.cancelled:
+                    self._failure(
+                        await self._io(
+                            artifacts.failure_result, self._coordinator.root, outcome
+                        )
+                    )
+                return None
+            payload = await self._io(
+                artifacts.prediction_result,
+                self._coordinator.root,
+                outcome,
+                selected.bundle.task,
+                len(records),
+                self._state.run.experiment.option,
+            )
+            if not self._current(identity) or self._state.selected is not selected:
+                return None
+            prediction = Prediction(
+                self._state.run.id, self._state.revisions, selected.model_id, payload
+            )
+            self._state = replace(self._state, prediction=prediction)
+            return prediction
+        except asyncio.CancelledError:
+            self.cancel()
+            raise
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            self._failure(
+                Failure(
+                    error.code
+                    if isinstance(error, DomainError)
+                    else "STORAGE"
+                    if isinstance(error, OSError)
+                    else "PROTOCOL",
+                    "Prediction could not complete safely.",
+                    "Correct the inputs and retry.",
+                )
+            )
+            return None
+        finally:
+            self._end_operation(identity, error_code=self._state.error_code)
+            self._idle.set()
+
+    async def export(self, destination, module_name="my_model", version="1.0.0"):
+        selected, refs = self._selected_bundle()
+        options = ExportOptions(module_name, version)
+        run = self._state.run
+        partial = (
+            run.status == RunStatus.PARTIAL
+            or len(run.candidates) != len(run.experiment.model_ids)
+            or any(c.status != CandidateStatus.COMPLETED for c in run.candidates)
+        )
+        identity = self._begin_operation(Operation.EXPORT, selected.model_id)
+        self._state = replace(self._state, exported_path=None, export_options=options)
+        self._idle.clear()
+        try:
+            observed = raw_records(
+                self._state.dataset,
+                run.experiment.feature_ids,
+                (self._state.prepared.train_rows[0],),
+            )
+            inputs = await self._io(
+                artifacts.bundle_inputs,
+                self._coordinator.root,
+                identity,
+                refs,
+                observed,
+            )
+            if not self._current(identity):
+                return None
+            async with self._coordinator.publication_staging(destination) as staging:
+                request = Request(
+                    identity,
+                    inputs,
+                    output_names(identity),
+                    json_data(
+                        {
+                            "module_name": module_name,
+                            "version": version,
+                            "publication_directory": str(staging),
+                            "partial_run": partial,
+                        }
+                    ).decode(),
+                )
+                outcome = await self._coordinator.run(request, on_event=self._event)
+                if not outcome.completed:
+                    if not outcome.cancelled:
+                        self._failure(
+                            await self._io(
+                                artifacts.failure_result,
+                                self._coordinator.root,
+                                outcome,
+                            )
+                        )
+                    return None
+                # Parent publication already crossed its acceptance barrier. Do not
+                # turn this committed success into a cancelled provisional result.
+                self._state = replace(self._state, exported_path=outcome.published_path)
+            return self._state.exported_path
+        except asyncio.CancelledError:
+            self.cancel()
+            raise
+        except (OSError, ValueError) as error:
+            self._failure(
+                Failure(
+                    error.code if isinstance(error, DomainError) else "EXPORT_IO",
+                    "Export could not complete safely.",
+                    "Choose a writable destination or different name and retry.",
+                )
+            )
+            return None
+        finally:
+            self._end_operation(identity, error_code=self._state.error_code)
+            self._idle.set()
+
     def cancel(self):
         self._coordinator.cancel()
         if self._state.activity == Activity.RUNNING:
@@ -803,10 +962,21 @@ class Service:
             }
         ):
             _error("RESULT", "Choose a completed current model.", "Return to Results.")
-        self._state = replace(self._state, selected_model_id=model_id)
+        if model_id != self._state.selected_model_id:
+            self._state = replace(
+                self._state,
+                selected_model_id=model_id,
+                prediction=None,
+                exported_path=None,
+                export_options=None,
+            )
 
     def _closed(self):
         """Called only after the operation owner has completed cleanup."""
         self._state = replace(
-            self._state, activity=Activity.CLOSED, active=None, selected_model_id=None
+            self._state,
+            activity=Activity.CLOSED,
+            active=None,
+            selected_model_id=None,
+            prediction=None,
         )

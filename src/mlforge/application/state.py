@@ -3,7 +3,13 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
-from mlforge.contracts import CandidateResult, ExperimentSpec, PreparedRun, TaskKind
+from mlforge.contracts import (
+    CandidateResult,
+    ExperimentSpec,
+    ExportOptions,
+    PreparedRun,
+    TaskKind,
+)
 from mlforge.datasets.records import Schema, TabularDataset
 from mlforge.execution.protocol import EventKind, Identity
 
@@ -75,6 +81,20 @@ class Failure:
 
 
 @dataclass(frozen=True)
+class Prediction:
+    run_id: str
+    revisions: Revisions
+    model_id: str
+    payload_json: str
+
+    @property
+    def data(self):
+        import json
+
+        return json.loads(self.payload_json)
+
+
+@dataclass(frozen=True)
 class Session:
     revisions: Revisions = Revisions()
     dataset: TabularDataset | None = None
@@ -89,6 +109,8 @@ class Session:
     error_code: str | None = None
     failure: Failure | None = None
     exported_path: str | None = None
+    export_options: ExportOptions | None = None
+    prediction: Prediction | None = None
 
     @property
     def results(self):

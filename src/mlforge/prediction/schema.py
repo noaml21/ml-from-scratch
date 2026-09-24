@@ -74,6 +74,7 @@ def save_bundle(
     warnings: tuple[str, ...] = (),
     acknowledgements: tuple[str, ...] = (),
     partial: bool = False,
+    split_policy: str | None = None,
 ) -> ModelBundle:
     """Save exact fitted state; inputs deliberately omit paths, rows and split IDs."""
     validate_schema(schema)
@@ -93,9 +94,8 @@ def save_bundle(
         "seed": 42,
         "training_count": training_count,
         "test_count": test_count,
-        "split_policy": "80/20 shuffled holdout"
-        if test_count
-        else "all-row exploration",
+        "split_policy": split_policy
+        or ("80/20 shuffled holdout" if test_count else "all-row exploration"),
         "estimator_params": pipeline.steps[-1][1].get_params(),
         "metrics": metrics or {},
         "diagnostics": diagnostics or {},

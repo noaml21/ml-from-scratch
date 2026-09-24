@@ -241,3 +241,19 @@ def schema_from_data(value):
             )
         )
     return Schema(tuple(profiles), record_count(value["revision"]))
+
+
+def raw_records(
+    dataset: TabularDataset, feature_ids: tuple[str, ...], rows: tuple[int, ...]
+) -> list[dict]:
+    indices = {column.id: index for index, column in enumerate(dataset.columns)}
+    chosen = [indices[column_id] for column_id in feature_ids]
+    return [
+        {
+            dataset.columns[index].name: None
+            if dataset.rows[row][index].missing
+            else dataset.rows[row][index].raw_text
+            for index in chosen
+        }
+        for row in rows
+    ]
