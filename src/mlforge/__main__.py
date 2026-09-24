@@ -1,4 +1,4 @@
-"""Noninteractive command bootstrap; full-screen composition follows in P06."""
+"""Noninteractive options and lazy composition of the local terminal workbench."""
 
 import argparse
 from importlib.metadata import version
@@ -12,9 +12,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--version", action="version", version=version("mlforge"))
     parser.parse_args(argv)
-    parser.exit(
-        2, "MLForge is under construction; the terminal workflow is not ready.\n"
-    )
+    from mlforge.application.service import Service
+    from mlforge.tui.app import MLForgeApp
+
+    MLForgeApp(Service()).run()
+    return 0
 
 
 if __name__ == "__main__":

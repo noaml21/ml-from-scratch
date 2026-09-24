@@ -11,8 +11,8 @@ Read [How it works](docs/HOW_IT_WORKS.md) for the system flow and
 The `v1/mlforge` branch is under construction. Packaging and noninteractive
 `mlforge --help` / `mlforge --version`, headless dataset/schema services, synthetic
 examples, six-model fitting/evaluation and standalone model export are implemented;
-the full terminal workflow
-is not ready. Current progress and verification are in
+the Textual shell now supports a real manual-file load and summary.
+The complete dataset review and training/export screens are still in progress. Current progress and verification are in
 [BUILD_STATE](docs/v1/BUILD_STATE.md). The educational algorithms below remain supported.
 
 Development setup (CPython 3.12 or 3.13 on Ubuntu 24.04 x86_64):
@@ -37,7 +37,7 @@ python scripts/verify_package.py
 
 The package verifier checks app packaging. The ordinary test suite also includes
 six real exported-model consumer installations and requires the prepared local
-wheelhouse; missing prerequisites fail explicitly. The TUI is not yet implemented.
+wheelhouse; missing prerequisites fail explicitly. The full TUI journey is not yet release verified. Run `mlforge` for the current shell.
 
 ## Overview
 

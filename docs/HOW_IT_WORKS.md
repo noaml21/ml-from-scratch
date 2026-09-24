@@ -1,6 +1,6 @@
 # How MLForge works
 
-The headless workflow is implemented: bounded local datasets and schema review, task preparation, isolated training/evaluation, immutable application state, shared prediction and verified wheel export. The full-screen TUI remains P06-P08 work. [BUILD_STATE](v1/BUILD_STATE.md) records the current gate; [AGENTS](../AGENTS.md) and [ARCHITECTURE](v1/ARCHITECTURE.md) define implementation rules and boundaries. The diagrams below include the planned presentation layer.
+The headless workflow is implemented: bounded local datasets and schema review, task preparation, isolated training/evaluation, immutable application state, shared prediction and verified wheel export. The full-screen shell, help/focus/resize/quit behavior and initial manual-load route are implemented; the complete dataset/configuration/results/Try/export screens remain P06-P08 work. [BUILD_STATE](v1/BUILD_STATE.md) records the current gate; [AGENTS](../AGENTS.md) and [ARCHITECTURE](v1/ARCHITECTURE.md) define implementation rules and boundaries. The diagrams include the complete intended presentation journey; BUILD_STATE identifies the screens implemented so far.
 
 MLForge turns a small local table into a tested model and a reusable Python package, entirely through a terminal application. [PRODUCT_SPEC](v1/PRODUCT_SPEC.md) defines the four tasks and deliberately small scope. The original NumPy algorithms remain the educational track alongside the new workbench.
 
@@ -61,7 +61,7 @@ The application runs without network access. Sensitive intermediate files remain
 
 This is explainable engineering: data records make boundaries testable, revisions prevent stale state, processes make cancellation real, and one runtime prevents prediction drift. The design needs no plugin platform or enterprise framework to achieve those properties.
 
-Shared records live in `src/mlforge/contracts.py` and `datasets/records.py`; model descriptions/factories live in `models.py`. Parent-facing ModelBundle uses an opaque directory plus immutable JSON metadata/hashes; it never exposes a fitted estimator. The AST guard in `tests/mlforge/test_architecture.py` enforces imports for modules present so far and fresh headless imports. The TUI in the diagrams is the remaining presentation layer.
+Shared records live in `src/mlforge/contracts.py` and `datasets/records.py`; model descriptions/factories live in `models.py`. Parent-facing ModelBundle uses an opaque directory plus immutable JSON metadata/hashes; it never exposes a fitted estimator. The AST guard in `tests/mlforge/test_architecture.py` enforces imports for modules present so far and fresh headless imports. The remaining TUI journey is being built over these services.
 
 `preprocessing.build_pipeline`, `prediction.runtime.Predictor`, `prediction.schema.fitted_schema/save_bundle` and `export.wheel.export_wheel` share the evaluated input and persistence contract. Canonical preparation splits rows before training fits each candidate's isolated transforms. Export validates the retained handle, copies the runtime and fitted state, checks distribution metadata/RECORD and separate-process prediction parity, then returns staged bytes for parent publication. Fresh consumer installation tests remain separate from ZIP-import parity checks.
 
@@ -76,3 +76,5 @@ Export cancellation also has parent-owned disk cleanup: the application reserves
 `application/artifacts.py` adapts bounded owned JSON and checks candidate metadata against the prepared run. It does not load estimators. Application acceptance distinguishes provisional worker completion from coordinator-accepted transport; cancellation during accepted-result decoding retains a valid completed candidate and stops queued work.
 
 Prediction snapshots carry the selected run/revision/model and immutable output JSON. Export uses coordinator-owned staging and parent publication. Incomplete-run provenance is copied into the wheel while the accepted bundle remains unchanged; no refitting occurs. `datasets.records.raw_records` supplies raw observed input projection; all normalization still belongs to the shared runtime.
+
+`MLForgeApp` in `tui/app.py` opens one Service and always closes it on unmount. The existing `mlforge` entrypoint imports presentation lazily after help/version. Shared Frame/help/confirmation/resize screens and `theme.tcss` own presentation; manual load calls Service.load and waits for its real worker. Modal help and resize defer screen transitions while preserving focus. No parsing, fitting or process management moved into widgets.

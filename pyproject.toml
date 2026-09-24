@@ -35,7 +35,7 @@ namespaces = false
 
 [tool.setuptools.package-data]
 "mlforge.export" = ["templates/*.txt"]
-"mlforge" = ["examples/*.csv", "examples/*.tsv", "examples/*.jsonl", "examples/*.md"]
+"mlforge" = ["examples/*.csv", "examples/*.tsv", "examples/*.jsonl", "examples/*.md", "tui/*.tcss"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

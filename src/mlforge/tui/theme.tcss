@@ -1,0 +1,119 @@
+$background: #101820;
+$surface: #182630;
+$elevated: #223642;
+$text: #E6EEF3;
+$muted: #AEC0CC;
+$accent: #66D9C3;
+$selected: #244247;
+$on-accent: #101820;
+$border: #526975;
+$success: #66D9C3;
+$warning: #F3C477;
+$error: #FF8A91;
+$pending: #AEC0CC;
+
+Screen {
+    background: $background;
+    color: $text;
+}
+#stage {
+    height: 1;
+    padding: 0 2;
+    background: $surface;
+    color: $muted;
+}
+#body {
+    height: 1fr;
+    padding: 1 2;
+    scrollbar-color: $border;
+    scrollbar-background: $surface;
+}
+.heading {
+    text-style: bold;
+    color: $text;
+    height: auto;
+    margin-bottom: 1;
+}
+Static {
+    height: auto;
+}
+.muted { color: $muted; }
+.error { color: $error; margin-top: 1; }
+#actions, .dialog-actions {
+    height: 2;
+    padding: 0 2;
+}
+#status {
+    height: 1;
+    padding: 0 2;
+    color: $muted;
+}
+Footer {
+    height: 1;
+    background: $surface;
+    color: $text;
+}
+Action {
+    width: auto;
+    min-width: 8;
+    height: 1;
+    border: none;
+    padding: 0 1;
+    margin-right: 2;
+    background: $surface;
+    color: $text;
+    text-style: none;
+}
+Action.-primary {
+    background: $accent;
+    color: $on-accent;
+}
+Action:focus {
+    text-style: bold;
+    background: $selected;
+    color: $text;
+}
+Action:hover {
+    background: $selected;
+    color: $text;
+}
+Action:disabled {
+    opacity: 100%;
+    color: $muted;
+    background: $surface;
+}
+Input {
+    width: 100%;
+    max-width: 96;
+    margin-top: 1;
+    background: $surface;
+    color: $text;
+    border: solid $border;
+}
+Input:focus {
+    border: solid $accent;
+}
+Welcome #stage, Welcome #actions, Welcome #status { display: none; }
+Welcome #body { align: center middle; }
+Welcome Static { width: 100%; text-align: center; }
+Welcome .heading { color: $accent; }
+#begin { margin-top: 2; text-style: bold; }
+Help, Confirm { align: center middle; background: $background 70%; }
+.dialog {
+    width: 76;
+    max-width: 95%;
+    height: auto;
+    max-height: 20;
+    padding: 1 2;
+    background: $elevated;
+    border: solid $accent;
+}
+.dialog-body {
+    height: auto;
+    max-height: 12;
+    margin-bottom: 1;
+    border-left: solid $elevated;
+}
+.dialog-body:focus { border-left: solid $accent; }
+.dialog-actions { padding: 0; height: 1; }
+ResizeGuard { padding: 1 2; }
