@@ -24,6 +24,8 @@ MAX_STDERR = 64 * 1024
 class Operation(StrEnum):
     PARSE = "parse"
     INSPECT = "inspect"
+    REVIEW = "review"
+    PREFLIGHT = "preflight"
     PREPARE = "prepare"
     TRAIN = "train"
     PREDICT = "predict"
@@ -33,6 +35,8 @@ class Operation(StrEnum):
 OUTPUTS = {
     Operation.PARSE: ("dataset.json", "schema.json"),
     Operation.INSPECT: ("schema.json",),
+    Operation.REVIEW: ("review.json",),
+    Operation.PREFLIGHT: ("prepared.json",),
     Operation.PREPARE: ("prepared.json",),
     Operation.TRAIN: ("candidate.json", "schema.json", "metadata.json", "model.skops"),
     Operation.PREDICT: ("predictions.json",),
@@ -70,6 +74,8 @@ PHASES = frozenset(
 OPERATION_PHASES = {
     Operation.PARSE: {"parsing"},
     Operation.INSPECT: {"inspecting"},
+    Operation.REVIEW: {"inspecting"},
+    Operation.PREFLIGHT: {"preparing"},
     Operation.PREPARE: {"preparing"},
     Operation.TRAIN: {"preprocessing", "training", "evaluating", "validating_artifact"},
     Operation.PREDICT: {"predicting"},

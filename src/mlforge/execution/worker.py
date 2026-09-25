@@ -44,6 +44,8 @@ from mlforge.execution.protocol import (
 INPUT_COUNTS = {
     Operation.PARSE: 0,
     Operation.INSPECT: 2,
+    Operation.REVIEW: 2,
+    Operation.PREFLIGHT: 3,
     Operation.PREPARE: 3,
     Operation.TRAIN: 2,
     Operation.PREDICT: 5,
@@ -52,6 +54,15 @@ INPUT_COUNTS = {
 OPTION_KEYS = {
     Operation.PARSE: {"path"},
     Operation.INSPECT: {"column_id", "kind"},
+    Operation.REVIEW: {
+        "task",
+        "target_id",
+        "feature_ids",
+        "model_ids",
+        "option",
+        "initialized",
+    },
+    Operation.PREFLIGHT: set(),
     Operation.PREPARE: set(),
     Operation.TRAIN: set(),
     Operation.PREDICT: set(),
@@ -125,6 +136,20 @@ def _prepare(root, request, options, progress):
     spec = experiment_from_data(_json_input(root, request.inputs[2]))
     prepared = prepare_run(dataset, schema, spec)
     return [_save(root, request.outputs[0], prepared_data(prepared))]
+
+
+def _review(root, request, options, progress):
+    from mlforge.tasks import configuration_review, review_data
+
+    progress("inspecting")
+    dataset, schema = _dataset_schema(root, request)
+    return [
+        _save(
+            root,
+            request.outputs[0],
+            review_data(configuration_review(dataset, schema, options)),
+        )
+    ]
 
 
 def _train(root, request, options, progress):
@@ -244,6 +269,8 @@ def _export(root, request, options, progress):
 DISPATCH = {
     Operation.PARSE: _parse,
     Operation.INSPECT: _inspect,
+    Operation.REVIEW: _review,
+    Operation.PREFLIGHT: _prepare,
     Operation.PREPARE: _prepare,
     Operation.TRAIN: _train,
     Operation.PREDICT: _predict,

@@ -12,6 +12,7 @@ from mlforge.contracts import (
 )
 from mlforge.datasets.records import Schema, TabularDataset
 from mlforge.execution.protocol import EventKind, Identity
+from mlforge.tasks import ConfigurationReview
 
 
 class Activity(StrEnum):
@@ -45,6 +46,7 @@ class Configuration:
     model_ids: tuple[str, ...] = ()
     option: int | None = None
     acknowledgements: tuple[str, ...] = ()
+    features_initialized: bool = False
 
     def __post_init__(self):
         for name in ("feature_ids", "model_ids", "acknowledgements"):
@@ -102,6 +104,7 @@ class Session:
     schema: Schema | None = None
     confirmed: bool = False
     configuration: Configuration = Configuration()
+    review: ConfigurationReview | None = None
     prepared: PreparedRun | None = None
     run: Run | None = None
     selected_model_id: str | None = None

@@ -2,10 +2,16 @@
 
 import math
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from mlforge.contracts import DomainError, ExperimentSpec, TaskKind
-from mlforge.datasets.records import ColumnType, Schema, TabularDataset
+from mlforge.datasets.records import (
+    ColumnType,
+    Schema,
+    TabularDataset,
+    record_keys,
+    record_text,
+)
 
 
 @dataclass(frozen=True)
@@ -36,6 +42,108 @@ class ReviewWarning:
     code: str
     message: str
     column_id: str | None = None
+
+
+@dataclass(frozen=True)
+class ConfigurationReview:
+    """Descriptive full-table review, never fitted preprocessing or UI state."""
+
+    goal_reasons: tuple[str | None, ...]
+    targets: tuple[Choice, ...] = ()
+    features: tuple[Choice, ...] = ()
+    selected_features: tuple[str, ...] = ()
+    warnings: tuple[ReviewWarning, ...] = ()
+    bounds: tuple[int, int, int] | None = None
+
+    def __post_init__(self):
+        for name in (
+            "goal_reasons",
+            "targets",
+            "features",
+            "selected_features",
+            "warnings",
+        ):
+            object.__setattr__(self, name, tuple(getattr(self, name)))
+        if self.bounds is not None:
+            object.__setattr__(self, "bounds", tuple(self.bounds))
+
+
+def review_data(review: ConfigurationReview) -> dict:
+    return {
+        "goal_reasons": list(review.goal_reasons),
+        "targets": [asdict(c) for c in review.targets],
+        "features": [asdict(c) for c in review.features],
+        "selected_features": list(review.selected_features),
+        "warnings": [asdict(w) for w in review.warnings],
+        "bounds": list(review.bounds) if review.bounds is not None else None,
+    }
+
+
+def review_from_data(value: dict) -> ConfigurationReview:
+    record_keys(
+        value, "goal_reasons targets features selected_features warnings bounds"
+    )
+    reasons = value["goal_reasons"]
+    if type(reasons) is not list or len(reasons) != len(TASKS):
+        raise ValueError("Invalid goal review")
+    for reason in reasons:
+        if reason is not None:
+            record_text(reason)
+
+    def choices(name):
+        rows = value[name]
+        if type(rows) is not list or len(rows) > 100:
+            raise ValueError("Invalid column review")
+        result = []
+        for row in rows:
+            record_keys(row, "column_id name eligible reason default")
+            for field in ("column_id", "name", "reason"):
+                record_text(row[field])
+            if any(type(row[k]) is not bool for k in ("eligible", "default")):
+                raise ValueError("Invalid choice flags")
+            if row["default"] and not row["eligible"]:
+                raise ValueError("Ineligible default")
+            result.append(Choice(**row))
+        if len({c.column_id for c in result}) != len(result):
+            raise ValueError("Duplicate column review")
+        return tuple(result)
+
+    targets, features = choices("targets"), choices("features")
+    selected = value["selected_features"]
+    if (
+        type(selected) is not list
+        or any(type(c) is not str for c in selected)
+        or len(set(selected)) != len(selected)
+        or not set(selected) <= {c.column_id for c in features if c.eligible}
+    ):
+        raise ValueError("Invalid selected features")
+    warnings = value["warnings"]
+    if type(warnings) is not list or len(warnings) > 501:
+        raise ValueError("Invalid warnings")
+    for warning in warnings:
+        record_keys(warning, "code message column_id")
+        record_text(warning["code"])
+        record_text(warning["message"])
+        if warning["column_id"] is not None:
+            record_text(warning["column_id"])
+            if warning["column_id"] not in {c.column_id for c in (*targets, *features)}:
+                raise ValueError("Invalid warning column")
+    bounds = value["bounds"]
+    if bounds is not None and (
+        type(bounds) is not list
+        or len(bounds) != 3
+        or any(type(n) is not int for n in bounds)
+        or not 1 <= bounds[0] <= bounds[2] <= bounds[1] <= 10
+    ):
+        raise ValueError("Invalid option bounds")
+    return ConfigurationReview(
+        tuple(reasons),
+        targets,
+        features,
+        tuple(selected),
+        tuple(ReviewWarning(**w) for w in warnings),
+        tuple(bounds) if bounds is not None else None,
+    )
 
 
 def column_values(dataset: TabularDataset, schema: Schema, column_id: str) -> tuple:
@@ -344,3 +452,66 @@ def validate_selection(
             "Keep selected features and continue, or edit Features.",
         )
     return warnings
+
+
+def configuration_review(dataset, schema, options) -> ConfigurationReview:
+    """Review existing policy in a child before committing a trainable plan."""
+    record_keys(options, "task target_id feature_ids model_ids option initialized")
+    task = TaskKind(options["task"]) if options["task"] is not None else None
+    if type(options["initialized"]) is not bool:
+        raise ValueError("Invalid initialization flag")
+    for key in ("feature_ids", "model_ids"):
+        items = options[key]
+        if (
+            type(items) is not list
+            or any(type(i) is not str for i in items)
+            or len(items) > 100
+            or len(set(items)) != len(items)
+        ):
+            raise ValueError("Invalid selection")
+    target = options["target_id"]
+    if target is not None and target not in {c.id for c in dataset.columns}:
+        raise ValueError("Unknown target")
+    if options["option"] is not None and type(options["option"]) is not int:
+        raise ValueError("Invalid option")
+    reasons = tuple(goal_reason(dataset, schema, item.task) for item in TASKS)
+    if task is None:
+        return ConfigurationReview(reasons)
+    suggested = {c.column_id for c in target_choices(dataset, schema, task)}
+    targets = (
+        tuple(
+            Choice(c.column_id, c.name, c.eligible, c.reason, c.column_id in suggested)
+            for c in target_choices(dataset, schema, task, show_all=True)
+        )
+        if task.supervised
+        else ()
+    )
+    if task.supervised and target is None:
+        return ConfigurationReview(reasons, targets)
+    if task.supervised and (reason := target_reason(dataset, schema, target, task)):
+        raise DomainError("TARGET", reason, "Return to Target or Preview.")
+    features = feature_choices(dataset, schema, task, target)
+    selected = (
+        tuple(options["feature_ids"])
+        if options["initialized"]
+        else tuple(c.column_id for c in features if c.default)
+    )
+    if not set(selected) <= {c.column_id for c in features if c.eligible}:
+        raise DomainError("FEATURE", "Choose usable inputs.", "Return to Features.")
+    bounds = option_bounds(task, len(dataset.rows), len(selected))
+    # An empty/insufficient selection is a recoverable feature screen state.
+    if bounds is not None and not bounds[0] <= bounds[2] <= bounds[1]:
+        bounds = None
+    warnings = ()
+    if selected:
+        spec = ExperimentSpec(
+            0,
+            dataset.fingerprint,
+            task,
+            target,
+            selected,
+            tuple(options["model_ids"]),
+            options["option"],
+        )
+        warnings = review_warnings(dataset, schema, spec)
+    return ConfigurationReview(reasons, targets, features, selected, warnings, bounds)

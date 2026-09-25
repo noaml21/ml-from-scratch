@@ -26,6 +26,8 @@ from mlforge.contracts import (
     ExperimentSpec,
     ExportOptions,
     TaskKind,
+    experiment_data,
+    prepared_from_data,
 )
 from mlforge.datasets.importers import EXAMPLES, FORMATS
 from mlforge.datasets.prepare import preparation_prompt, save_prompt
@@ -52,6 +54,7 @@ from mlforge.execution.protocol import (
     write_owned,
 )
 from mlforge.models import MODELS
+from mlforge.tasks import TASKS, option_bounds, review_from_data
 
 
 def _error(code, message, action):
@@ -63,6 +66,8 @@ class Service:
 
     formats = FORMATS
     examples = EXAMPLES
+    tasks = TASKS
+    models = MODELS
 
     def __init__(self):
         self._state = Session()
@@ -239,6 +244,112 @@ class Service:
             self._accept_schema,
         )
 
+    async def review_configuration(self):
+        """Cancellable full-table choices/warnings; descriptive, with no fitting."""
+        self._open_command(discard=True)
+        if not self._state.confirmed:
+            _error("CONFIRM", "Confirm the dataset first.", "Return to Preview.")
+        state = self._state
+        config = state.configuration
+        identity = self._begin_operation(Operation.REVIEW)
+        return await self._operate(
+            identity,
+            lambda: (dataset_data(state.dataset), schema_data(state.schema)),
+            {
+                "task": config.task.value if config.task is not None else None,
+                "target_id": config.target_id,
+                "feature_ids": list(config.feature_ids),
+                # Warnings do not depend on model selection, including no models.
+                "model_ids": [m.id for m in MODELS if m.task == config.task],
+                "option": config.option,
+                "initialized": config.features_initialized,
+            },
+            lambda values: (review_from_data(values[0]),),
+            self._accept_review,
+        )
+
+    async def preview_preprocessing(self):
+        """Validate and split through the same preparation service used by Train."""
+        self._open_command(discard=True)
+        spec = self.experiment()
+        state = self._state
+        identity = self._begin_operation(Operation.PREFLIGHT)
+        return await self._operate(
+            identity,
+            lambda: (
+                dataset_data(state.dataset),
+                schema_data(state.schema),
+                experiment_data(spec),
+            ),
+            {},
+            lambda values: (prepared_from_data(values[0]),),
+            self._accept_preflight,
+        )
+
+    def _accept_review(self, identity, review):
+        if (
+            not self._current(identity)
+            or identity.operation != Operation.REVIEW
+            or self._state.active.terminal != EventKind.COMPLETED
+        ):
+            return False
+        state = self._state
+        config = state.configuration
+        columns = {c.id: c.name for c in state.dataset.columns}
+        if any(
+            columns.get(c.column_id) != c.name
+            for c in (*review.targets, *review.features)
+        ):
+            return False
+        ready = config.task is not None and (
+            not config.task.supervised or config.target_id is not None
+        )
+        expected_targets = (
+            set(columns) if config.task and config.task.supervised else set()
+        )
+        expected_features = set(columns) if ready else set()
+        if {c.column_id for c in review.targets} != expected_targets or {
+            c.column_id for c in review.features
+        } != expected_features:
+            return False
+        if config.features_initialized:
+            if review.selected_features != config.feature_ids:
+                return False
+        elif ready:
+            config = replace(
+                config, feature_ids=review.selected_features, features_initialized=True
+            )
+        if ready and config.option is None and review.bounds is not None:
+            config = replace(config, option=review.bounds[2])
+        revisions = state.revisions
+        if config != state.configuration:
+            revisions = replace(revisions, experiment=revisions.experiment + 1)
+        self._state = replace(
+            state,
+            configuration=config,
+            review=review,
+            revisions=revisions,
+            active=None,
+            activity=Activity.IDLE,
+        )
+        return True
+
+    def _accept_preflight(self, identity, prepared):
+        if (
+            not self._current(identity)
+            or identity.operation != Operation.PREFLIGHT
+            or self._state.active.terminal != EventKind.COMPLETED
+            or prepared.experiment != self.experiment()
+            or prepared.schema != self._state.schema
+            or set(prepared.train_rows + prepared.test_rows)
+            != set(range(len(self._state.dataset.rows)))
+            or len(prepared.train_rows) + len(prepared.test_rows)
+            != len(self._state.dataset.rows)
+        ):
+            return False
+        self._state = replace(self._state, prepared=prepared)
+        return True
+
     @property
     def snapshot(self):
         return self._state
@@ -266,6 +377,7 @@ class Service:
                 self._state.revisions, experiment=self._state.revisions.experiment + 1
             ),
             configuration=configuration,
+            review=None,
             prepared=None,
             run=None,
             selected_model_id=None,
@@ -295,6 +407,12 @@ class Service:
             _error("GOAL", "Choose an available goal.", "Return to Goal.")
         if task == self._state.configuration.task:
             return
+        if self._state.review is not None:
+            reason = self._state.review.goal_reasons[
+                [t.task for t in TASKS].index(task)
+            ]
+            if reason:
+                _error("GOAL", reason, "Choose another goal or review column types.")
         self._change(
             Configuration(
                 task=task, model_ids=tuple(m.id for m in MODELS if m.task == task)
@@ -314,6 +432,17 @@ class Service:
             _error("TARGET", "Choose a current column.", "Return to Target.")
         if config.target_id == column_id:
             return
+        if self._state.review is not None:
+            choice = next(
+                (c for c in self._state.review.targets if c.column_id == column_id),
+                None,
+            )
+            if choice is None or not choice.eligible:
+                _error(
+                    "TARGET",
+                    choice.reason if choice else "Choose an eligible target.",
+                    "Return to Target or Preview.",
+                )
         self._change(
             replace(
                 config,
@@ -322,6 +451,7 @@ class Service:
                 model_ids=tuple(m.id for m in MODELS if m.task == config.task),
                 option=None,
                 acknowledgements=(),
+                features_initialized=False,
             ),
             discard=discard,
         )
@@ -342,10 +472,33 @@ class Service:
                 "Choose distinct current inputs without the target.",
                 "Return to Features.",
             )
-        if ids == config.feature_ids:
+        if self._state.review is not None and not set(ids) <= {
+            c.column_id for c in self._state.review.features if c.eligible
+        }:
+            _error(
+                "FEATURE", "Choose eligible inputs.", "Review column types or Features."
+            )
+        if ids == config.feature_ids and config.features_initialized:
             return
+        option = config.option
+        bounds = option_bounds(config.task, len(self._state.dataset.rows), len(ids))
+        if (
+            option is not None
+            and bounds is not None
+            and not bounds[0] <= option <= bounds[1]
+        ):
+            # Changed feature counts may invalidate PCA dimensions. Reinitialize
+            # only that dependent value; keep any still-valid explicit choice.
+            option = None
         self._change(
-            replace(config, feature_ids=ids, acknowledgements=()), discard=discard
+            replace(
+                config,
+                feature_ids=ids,
+                acknowledgements=(),
+                features_initialized=True,
+                option=option,
+            ),
+            discard=discard,
         )
 
     def choose_models(self, model_ids, *, discard=False):
