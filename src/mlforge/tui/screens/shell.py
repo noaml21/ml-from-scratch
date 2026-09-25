@@ -64,6 +64,9 @@ class Frame(Screen):
     def actions(self):
         return ()
 
+    def cancel_and_back(self):
+        self.app.service.cancel()
+
     def compose(self):
         yield Static(
             "MLForge · "
@@ -96,11 +99,24 @@ class Help(ModalScreen):
             yield Static(self.title_text, classes="heading", markup=False)
             with VerticalScroll(classes="dialog-body", can_focus=True):
                 yield Static(self.body_text, markup=False)
+                yield Static("", id="background-status", classes="muted", markup=False)
             with Horizontal(classes="dialog-actions"):
                 yield Action("Close", id="close", variant="primary")
 
     def on_mount(self):
         self.query_one("#close").focus()
+        self.update_background()
+        self.set_interval(0.1, self.update_background)
+
+    def update_background(self):
+        activity = self.app.service.snapshot.activity
+        self.query_one("#background-status", Static).update(
+            "Stopping background work…"
+            if activity == Activity.CANCELLING
+            else "Background work is running. Close help to see status or cancel."
+            if activity == Activity.RUNNING
+            else ""
+        )
 
     def action_close(self):
         self.dismiss()

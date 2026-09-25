@@ -168,3 +168,5 @@ TextArea > .text-area--selection { background: $selected; color: $text; }
 
 .warning { color: $warning; }
 Features #choices { max-height: 8; }
+
+Training #candidates { height: auto; max-height: 8; }

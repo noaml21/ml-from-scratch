@@ -69,6 +69,7 @@ class Run:
     experiment: ExperimentSpec
     status: RunStatus = RunStatus.RUNNING
     candidates: tuple[CandidateResult, ...] = ()
+    cancelled: bool = False
 
     def __post_init__(self):
         object.__setattr__(self, "candidates", tuple(self.candidates))

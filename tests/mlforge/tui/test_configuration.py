@@ -314,6 +314,9 @@ async def test_models_state_options_help_and_visuals(task, monochrome, monkeypat
             assert "at least one" in str(
                 owner.query_one("#selection-note", Static).content
             )
+            await activate(app, pilot, "train")
+            assert "at least one" in str(owner.query_one("#error", Static).content)
+            assert app.focused is listing
             with pytest.raises(DomainError):
                 await app.service.train()
             assert app.service.snapshot.run is None
@@ -337,6 +340,8 @@ async def test_models_state_options_help_and_visuals(task, monochrome, monkeypat
                 assert app.service.snapshot.configuration == config
                 assert app.focused is field and field.value == value
                 assert "Error:" in str(owner.query_one("#error", Static).content)
+                await activate(app, pilot, "train")
+                assert app.service.snapshot.run is None and app.focused is field
             await pilot.press("f1")
             assert isinstance(app.screen, Help)
             await pilot.press("escape")

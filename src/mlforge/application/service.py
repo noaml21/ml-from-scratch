@@ -792,7 +792,7 @@ class Service:
         )
         self._state = replace(
             self._state,
-            run=replace(run, status=status),
+            run=replace(run, status=status, cancelled=cancelled),
             active=None,
             activity=Activity.IDLE,
         )

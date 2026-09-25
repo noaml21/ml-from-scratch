@@ -13,8 +13,10 @@ The `v1/mlforge` branch is under construction. Packaging and noninteractive
 examples, six-model fitting/evaluation and standalone model export are implemented;
 the Textual shell supports local browsing, manual paths, packaged examples and a
 first-50-row preview with schema statistics and complete cell details.
-Schema correction, reset, explicit confirmation and local Prepare Copy/Save are
-implemented. The dataset phase gate and remaining training/export screens are in progress. Current progress and verification are in
+Schema correction, reset, explicit confirmation and local Prepare Copy/Save have
+passed the dataset phase gate. Goal, target, feature and model selection now lead
+through preprocessing review to real training, live status and cancellation.
+Results/inspection and Try Model/export screens remain in progress. Current progress and verification are in
 [BUILD_STATE](docs/v1/BUILD_STATE.md). The educational algorithms below remain supported.
 
 Development setup (CPython 3.12 or 3.13 on Ubuntu 24.04 x86_64):

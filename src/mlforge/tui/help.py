@@ -160,3 +160,12 @@ CATALOG.update(
         ),
     }
 )
+
+CATALOG["training"] = (
+    "Training locally",
+    "Models run one at a time in owned child processes. The display reports "
+    "actual phases and accepted candidate counts, not a guessed percentage. "
+    "Cancel stops scheduling and waits for child cleanup; previously accepted "
+    "candidates remain available. Help does not pause training. Back or quit "
+    "offers cancellation with Keep running selected by default.",
+)

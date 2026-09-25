@@ -144,7 +144,7 @@ class MLForgeApp(App):
 
     def _cancel_back(self, accepted):
         if accepted:
-            self.service.cancel()
+            self.screen.cancel_and_back()
         self._resume()
 
     def action_letter_quit(self):

@@ -13,6 +13,7 @@ from mlforge.contracts import DomainError, TaskKind
 from mlforge.datasets.records import visible_text
 from mlforge.tui.help import CATALOG
 from mlforge.tui.screens.shell import Action, Busy, Frame, operation_message
+from mlforge.tui.screens.training import Training
 
 
 class Choices(OptionList):
@@ -411,8 +412,9 @@ class Models(ConfigurationFrame):
         yield Static("", id="error", classes="error", markup=False)
 
     def actions(self):
+        yield Action("Train", id="train", variant="primary")
         if self.app.service.model_option_bounds is not None:
-            yield Action("Apply option", id="apply", variant="primary")
+            yield Action("Apply option", id="apply")
         yield Action("Back", id="back")
 
     def on_mount(self):
@@ -510,7 +512,9 @@ class Models(ConfigurationFrame):
         self.apply_option()
 
     def on_button_pressed(self, event: Button.Pressed):
-        if event.button.id == "apply":
+        if event.button.id == "train":
+            self.start_training()
+        elif event.button.id == "apply":
             self.apply_option()
         else:
             super().on_button_pressed(event)
@@ -526,3 +530,26 @@ class Models(ConfigurationFrame):
                 + CATALOG[self.shown[0].help_key][1],
             )
         return None
+
+    def start_training(self):
+        if not self.app.service.snapshot.configuration.model_ids:
+            self.fail("Choose at least one model before training.")
+            return
+        value = self.app.service.snapshot.configuration.option
+        if self.app.service.model_option_bounds is not None:
+            try:
+                value = int(self.query_one("#option", Input).value)
+            except ValueError:
+                self.option_error("Enter a whole number within the displayed range.")
+                return
+
+        def start(discard):
+            try:
+                self.app.service.choose_option(value, discard=discard)
+                self.app.service.experiment()
+            except DomainError as error:
+                self.option_error(f"{error.message} {error.action}")
+            else:
+                self.app.push_screen(Training(discard=discard))
+
+        self.app.confirm_discard(start)
