@@ -1,14 +1,21 @@
 """Real service configuration journeys; no mocked domain choices or fitting."""
 
 import asyncio
+from pathlib import Path
 
 import pytest
-from textual.widgets import OptionList, Static
+from textual.widgets import Input, OptionList, Static
 
 from mlforge.application.service import Service
-from mlforge.contracts import TaskKind
+from mlforge.contracts import DomainError, TaskKind
 from mlforge.tui.app import MLForgeApp
-from mlforge.tui.screens.configuration import Features, Goal, Preprocessing, Target
+from mlforge.tui.screens.configuration import (
+    Features,
+    Goal,
+    Models,
+    Preprocessing,
+    Target,
+)
 from mlforge.tui.screens.preview import Preview
 from mlforge.tui.screens.shell import Help, ResizeGuard
 
@@ -100,6 +107,12 @@ async def test_four_goal_journeys_use_real_review_and_preflight(task):
         await activate(app, pilot, "continue")
         await until(lambda: isinstance(app.screen, Preprocessing))
         assert app.service.snapshot.prepared == prepared
+        await activate(app, pilot, "continue")
+        assert isinstance(app.screen, Models)
+        assert len(app.screen.shown) == (2 if task.supervised else 1)
+        assert app.service.snapshot.run is None
+        await pilot.press("escape")
+        assert isinstance(app.screen, Preprocessing)
     assert not app.service._coordinator.root.exists()
 
 
@@ -250,3 +263,109 @@ async def test_interrupted_feature_review_preserves_choices_and_can_retry(monkey
         await activate(app, pilot, "continue")
         await until(lambda: isinstance(app.screen, Preprocessing))
         assert app.service.snapshot.prepared.experiment.feature_ids == changed
+
+
+@pytest.mark.parametrize("task", list(TaskKind))
+@pytest.mark.parametrize("monochrome", [False, True])
+async def test_models_state_options_help_and_visuals(task, monochrome, monkeypatch):
+    if monochrome:
+        monkeypatch.setenv("NO_COLOR", "1")
+    else:
+        monkeypatch.delenv("NO_COLOR", raising=False)
+    destination = Path(".mlforge-build/p07-models")
+    destination.mkdir(parents=True, exist_ok=True)
+    app = MLForgeApp(Service())
+    async with app.run_test(size=(80, 24)) as pilot:
+        example = next(e for e in app.service.examples if e.task == task)
+        assert await app.service.load_example(example.filename)
+        app.service.confirm_schema()
+        app.service.choose_task(task)
+        assert await app.service.review_configuration()
+        if task.supervised:
+            app.service.choose_target(
+                next(
+                    c.column_id
+                    for c in app.service.snapshot.review.targets
+                    if c.default
+                )
+            )
+            assert await app.service.review_configuration()
+        app.service.acknowledge(
+            tuple(w.code for w in app.service.snapshot.review.warnings)
+        )
+        assert await app.service.preview_preprocessing()
+        await app.push_screen(Preprocessing())
+        await activate(app, pilot, "continue")
+        assert isinstance(app.screen, Models)
+        owner = app.screen
+        listing = owner.query_one("#choices", OptionList)
+        assert app.focused is listing
+        defaults = app.service.snapshot.configuration.model_ids
+        assert len(defaults) == (2 if task.supervised else 1)
+        await pilot.press("question_mark")
+        assert isinstance(app.screen, Help)
+        await pilot.press("escape")
+        assert app.focused is listing
+        if task.supervised:
+            await pilot.press("space")
+            assert app.service.snapshot.configuration.model_ids == (defaults[1],)
+            await pilot.press("down", "space")
+            assert app.service.snapshot.configuration.model_ids == ()
+            assert "at least one" in str(
+                owner.query_one("#selection-note", Static).content
+            )
+            with pytest.raises(DomainError):
+                await app.service.train()
+            assert app.service.snapshot.run is None
+            await pilot.press("escape")
+            assert isinstance(app.screen, Preprocessing)
+            await activate(app, pilot, "continue")
+            owner = app.screen
+            listing = owner.query_one("#choices", OptionList)
+            assert app.service.snapshot.configuration.model_ids == ()
+            await pilot.press("space")
+            assert app.service.snapshot.configuration.model_ids == (defaults[0],)
+        else:
+            bounds = app.service.model_option_bounds
+            config = app.service.snapshot.configuration
+            assert config.option == bounds[2]
+            field = owner.query_one("#option", Input)
+            field.focus()
+            for value in ["", "3.5", str(bounds[0] - 1), str(bounds[1] + 1), "bq?"]:
+                field.value = value
+                await pilot.press("enter")
+                assert app.service.snapshot.configuration == config
+                assert app.focused is field and field.value == value
+                assert "Error:" in str(owner.query_one("#error", Static).content)
+            await pilot.press("f1")
+            assert isinstance(app.screen, Help)
+            await pilot.press("escape")
+            assert app.focused is field and field.value == "bq?"
+            field.value = str(bounds[0])
+            await pilot.press("enter")
+            assert app.service.snapshot.configuration.option == bounds[0]
+            await pilot.press("escape", "escape")
+            assert isinstance(app.screen, Preprocessing)
+            await activate(app, pilot, "continue")
+            owner = app.screen
+            listing = owner.query_one("#choices", OptionList)
+            assert owner.query_one("#option", Input).value == str(bounds[0])
+            assert app.service.snapshot.configuration.model_ids == defaults
+        config = app.service.snapshot.configuration
+        focused = app.focused
+        for size in [(80, 24), (100, 30), (79, 23), (140, 40), (80, 24)]:
+            await pilot.resize_terminal(*size)
+            await pilot.pause()
+            if size[0] < 80:
+                assert isinstance(app.screen, ResizeGuard)
+            else:
+                assert app.screen is owner and app.focused is focused
+                app.save_screenshot(
+                    f"{task}-{size[0]}-{'mono' if monochrome else 'color'}.svg",
+                    path=str(destination),
+                )
+        assert app.service.snapshot.configuration == config
+        assert app.service.snapshot.run is None
+        await pilot.press("escape")
+        await activate(app, pilot, "continue")
+        assert app.service.snapshot.configuration == config

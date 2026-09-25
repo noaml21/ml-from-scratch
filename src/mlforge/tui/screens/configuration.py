@@ -6,10 +6,10 @@ from rich.style import Style
 from rich.text import Text
 from textual import work
 from textual.binding import Binding
-from textual.widgets import Button, Checkbox, OptionList, Static
+from textual.widgets import Button, Checkbox, Input, OptionList, Static
 from textual.widgets.option_list import Option
 
-from mlforge.contracts import DomainError
+from mlforge.contracts import DomainError, TaskKind
 from mlforge.datasets.records import visible_text
 from mlforge.tui.help import CATALOG
 from mlforge.tui.screens.shell import Action, Busy, Frame, operation_message
@@ -344,7 +344,7 @@ class Features(ConfigurationFrame):
 class Preprocessing(ConfigurationFrame):
     heading = "Review automatic preprocessing"
     help_topic = "preprocessing"
-    primary_id = "back"
+    primary_id = "continue"
     status = "These rules are applied independently to each candidate."
 
     def content(self):
@@ -373,7 +373,156 @@ class Preprocessing(ConfigurationFrame):
         yield Static("", id="error", classes="error", markup=False)
 
     def actions(self):
-        yield Action("Back to features", id="back", variant="primary")
+        yield Action("Continue", id="continue", variant="primary")
+        yield Action("Back to features", id="back")
 
     def on_mount(self):
-        self.query_one("#back").focus()
+        self.query_one("#continue").focus()
+
+    def on_button_pressed(self, event: Button.Pressed):
+        if event.button.id == "continue":
+            self.app.push_screen(Models())
+        else:
+            super().on_button_pressed(event)
+
+
+class Models(ConfigurationFrame):
+    BINDINGS = [Binding("space", "toggle", "Toggle")]
+    heading = "Choose models to train"
+    help_topic = "models"
+    status = "Choices stay in this session. No model is fitted until training starts."
+
+    def content(self):
+        config = self.app.service.snapshot.configuration
+        self.shown = tuple(m for m in self.app.service.models if m.task == config.task)
+        yield Choices(id="choices", markup=False)
+        bounds = self.app.service.model_option_bounds
+        if bounds is not None:
+            label = (
+                "Number of groups (k)"
+                if config.task == TaskKind.CLUSTERING
+                else "Number of components"
+            )
+            yield Static(
+                f"{label} · {bounds[0]}–{bounds[1]}", id="option-label", markup=False
+            )
+            yield Input(value=str(config.option), id="option")
+        yield Static("", id="selection-note", markup=False)
+        yield Static("", id="error", classes="error", markup=False)
+
+    def actions(self):
+        if self.app.service.model_option_bounds is not None:
+            yield Action("Apply option", id="apply", variant="primary")
+        yield Action("Back", id="back")
+
+    def on_mount(self):
+        self.refresh_choices()
+        self.query_one("#choices").focus()
+
+    def check_action(self, action, parameters):
+        if action == "toggle":
+            return (
+                isinstance(self.focused, OptionList)
+                and self.app.service.snapshot.configuration.task.supervised
+            )
+        return super().check_action(action, parameters)
+
+    def refresh_choices(self):
+        state = self.app.service.snapshot
+        selected = state.configuration.model_ids
+        listing = self.query_one("#choices", OptionList)
+        highlighted = listing.highlighted or 0
+        style = listing.get_component_rich_style("option-list--option-highlighted")
+        listing.clear_options()
+        listing.add_options(
+            Option(
+                Text(
+                    f"[{'x' if m.id in selected else ' '}] {m.name}",
+                    style=Style(color=style.color, bgcolor=style.bgcolor)
+                    if m.id in selected
+                    else "",
+                ),
+                id=m.id,
+            )
+            for m in self.shown
+        )
+        listing.highlighted = highlighted
+        self.query_one("#selection-note", Static).update(
+            f"{len(selected)} selected"
+            if selected
+            else "Choose at least one model before training."
+        )
+        self.query_one("#error", Static).update("")
+
+    def action_toggle(self):
+        listing = self.query_one("#choices", OptionList)
+        config = self.app.service.snapshot.configuration
+        if (
+            not listing.has_focus
+            or listing.highlighted is None
+            or not config.task.supervised
+        ):
+            return
+        selected = set(config.model_ids)
+        selected.symmetric_difference_update((self.shown[listing.highlighted].id,))
+        ids = tuple(m.id for m in self.shown if m.id in selected)
+
+        def apply(discard):
+            try:
+                self.app.service.choose_models(ids, discard=discard)
+            except DomainError as error:
+                self.fail(f"{error.message} {error.action}")
+            else:
+                self.refresh_choices()
+
+        self.app.confirm_discard(apply)
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected):
+        self.action_toggle()
+
+    def apply_option(self):
+        field = self.query_one("#option", Input)
+        try:
+            value = int(field.value)
+        except ValueError:
+            self.option_error("Enter a whole number within the displayed range.")
+            return
+
+        def apply(discard):
+            try:
+                self.app.service.choose_option(value, discard=discard)
+            except DomainError as error:
+                self.option_error(f"{error.message} {error.action}")
+            else:
+                self.query_one("#error", Static).update("")
+                self.query_one("#selection-note", Static).update("Option applied.")
+
+        if value == self.app.service.snapshot.configuration.option:
+            apply(False)
+        else:
+            self.app.confirm_discard(apply)
+
+    def option_error(self, message):
+        self.query_one("#error", Static).update(f"Error: {message}")
+        self.query_one("#option").focus()
+
+    def on_input_submitted(self, event: Input.Submitted):
+        self.apply_option()
+
+    def on_button_pressed(self, event: Button.Pressed):
+        if event.button.id == "apply":
+            self.apply_option()
+        else:
+            super().on_button_pressed(event)
+
+    def context_help(self, focused):
+        if isinstance(focused, OptionList) and focused.highlighted is not None:
+            return CATALOG[self.shown[focused.highlighted].help_key]
+        if isinstance(focused, Input):
+            bounds = self.app.service.model_option_bounds
+            return (
+                "Task option",
+                f"Choose a whole number from {bounds[0]} to {bounds[1]}. "
+                + CATALOG[self.shown[0].help_key][1],
+            )
+        return None

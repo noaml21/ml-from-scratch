@@ -249,3 +249,17 @@ async def test_incomplete_worker_review_cannot_replace_valid_configuration(monke
         assert not await app.review_configuration()
         assert app.snapshot.configuration == prior
         assert app.snapshot.activity == Activity.IDLE
+
+
+async def test_preflight_does_not_trap_an_empty_model_selection():
+    async with Service() as app:
+        assert await app.load_example("clustering.csv")
+        app.confirm_schema()
+        app.choose_task("clustering")
+        assert await app.review_configuration()
+        app.choose_models(())
+        assert await app.preview_preprocessing()
+        assert app.snapshot.configuration.model_ids == ()
+        assert app.snapshot.run is None
+        with pytest.raises(DomainError):
+            await app.train()

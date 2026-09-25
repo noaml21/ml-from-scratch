@@ -113,3 +113,50 @@ CATALOG.update(
         ),
     }
 )
+
+CATALOG.update(
+    {
+        "models": (
+            "Choose models",
+            "Both supervised choices start selected. Space toggles the focused "
+            "model. Choose at least one before training. K-Means and PCA each have "
+            "one bounded task option; other estimator settings stay fixed.",
+        ),
+        "model.logistic": (
+            "Logistic Regression",
+            "A linear decision boundary provides a simple starting point for "
+            "categories. Numeric inputs are scaled using training rows. It may miss "
+            "nonlinear patterns.",
+        ),
+        "model.classifier_forest": (
+            "Random Forest Classifier",
+            "Combines decision trees to capture nonlinear patterns and "
+            "interactions. It can fit more complex relationships than a linear "
+            "model, but still needs independent validation.",
+        ),
+        "model.linear": (
+            "Linear Regression",
+            "Predicts a number as a linear combination of inputs. Numeric inputs "
+            "are scaled on training rows. It is a useful simple reference but may "
+            "miss nonlinear patterns.",
+        ),
+        "model.regressor_forest": (
+            "Random Forest Regressor",
+            "Combines decision trees for nonlinear numeric predictions. It can "
+            "capture interactions, but generally cannot extrapolate beyond observed "
+            "target values reliably.",
+        ),
+        "model.kmeans": (
+            "K-Means",
+            "Groups scaled numeric rows by distance. Choose how many groups to "
+            "seek. Results describe this dataset, not predictive accuracy; cluster "
+            "IDs have no inherent meaning.",
+        ),
+        "model.pca": (
+            "PCA",
+            "Combines scaled numeric inputs into fewer components. Choose how many "
+            "to retain. Variance retained describes compression of this dataset, "
+            "not predictive quality.",
+        ),
+    }
+)

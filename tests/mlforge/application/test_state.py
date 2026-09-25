@@ -310,3 +310,20 @@ def test_unsupervised_option_invalidates_run_revision_and_target_is_absent(data)
     assert service.experiment().target_id is None
     with pytest.raises(DomainError):
         service.choose_target("c2")
+
+
+@pytest.mark.parametrize(
+    "task,expected",
+    [(TaskKind.CLUSTERING, (2, 10, 3)), (TaskKind.REDUCTION, (1, 1, 1))],
+)
+def test_model_option_bounds_reject_invalid_values_atomically(data, task, expected):
+    service = loaded(data)
+    service.choose_task(task)
+    service.choose_features(("c0", "c1"))
+    assert service.model_option_bounds == expected
+    service.choose_option(expected[2])
+    before = service.snapshot
+    for value in [expected[0] - 1, expected[1] + 1, True, 1.5, "2"]:
+        with pytest.raises(DomainError):
+            service.choose_option(value)
+        assert service.snapshot is before

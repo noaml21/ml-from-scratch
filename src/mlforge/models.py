@@ -73,7 +73,7 @@ MODELS = (
     ),
     ModelSpec(
         "classification.forest",
-        "Random Forest",
+        "Random Forest Classifier",
         TaskKind.CLASSIFICATION,
         classifier_forest,
         False,

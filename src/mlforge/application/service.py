@@ -271,7 +271,7 @@ class Service:
     async def preview_preprocessing(self):
         """Validate and split through the same preparation service used by Train."""
         self._open_command(discard=True)
-        spec = self.experiment()
+        spec = self._preflight_experiment()
         state = self._state
         identity = self._begin_operation(Operation.PREFLIGHT)
         return await self._operate(
@@ -339,7 +339,7 @@ class Service:
             not self._current(identity)
             or identity.operation != Operation.PREFLIGHT
             or self._state.active.terminal != EventKind.COMPLETED
-            or prepared.experiment != self.experiment()
+            or prepared.experiment != self._preflight_experiment()
             or prepared.schema != self._state.schema
             or set(prepared.train_rows + prepared.test_rows)
             != set(range(len(self._state.dataset.rows)))
@@ -521,7 +521,27 @@ class Service:
             or (config.task.supervised and option is not None)
         ):
             _error("OPTION", "Choose an integer task option.", "Return to Models.")
+        bounds = self.model_option_bounds
+        if (
+            option is not None
+            and bounds is not None
+            and not bounds[0] <= option <= bounds[1]
+        ):
+            _error(
+                "OPTION",
+                f"Choose an integer from {bounds[0]} to {bounds[1]}.",
+                "Correct the task option.",
+            )
         self._change(replace(config, option=option), discard=discard)
+
+    @property
+    def model_option_bounds(self):
+        config = self._state.configuration
+        if config.task is None:
+            return None
+        return option_bounds(
+            config.task, len(self._state.dataset.rows), len(config.feature_ids)
+        )
 
     def acknowledge(self, codes, *, discard=False):
         values = tuple(codes)
@@ -536,6 +556,17 @@ class Service:
         )
 
     def experiment(self):
+        return self._experiment(self._state.configuration.model_ids)
+
+    def _preflight_experiment(self):
+        # Preprocessing review precedes model selection. An empty selection stays
+        # empty; only this unfitted validation plan uses applicable descriptors.
+        config = self._state.configuration
+        return self._experiment(
+            config.model_ids or tuple(m.id for m in MODELS if m.task == config.task)
+        )
+
+    def _experiment(self, model_ids):
         config = self._state.configuration
         if not self._state.confirmed or config.task is None:
             _error(
@@ -550,7 +581,7 @@ class Service:
                 config.task,
                 config.target_id,
                 config.feature_ids,
-                config.model_ids,
+                model_ids,
                 config.option,
                 acknowledgements=config.acknowledgements,
             )
