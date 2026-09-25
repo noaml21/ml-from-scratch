@@ -41,6 +41,7 @@ class Frame(Screen):
     ]
     help_topic = "welcome"
     heading = ""
+    stage = "Dataset"
     status = ""
 
     @property
@@ -65,7 +66,11 @@ class Frame(Screen):
 
     def compose(self):
         yield Static(
-            "MLForge · [Dataset] / Goal / Training / Results / Export",
+            "MLForge · "
+            + " / ".join(
+                f"[{stage}]" if stage == self.stage else stage
+                for stage in ("Dataset", "Goal", "Training", "Results", "Export")
+            ),
             id="stage",
             markup=False,
         )

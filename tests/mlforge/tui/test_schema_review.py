@@ -10,6 +10,7 @@ from mlforge.application.service import Service
 from mlforge.contracts import DomainError
 from mlforge.datasets.records import ColumnType
 from mlforge.tui.app import MLForgeApp
+from mlforge.tui.screens.configuration import Goal
 from mlforge.tui.screens.dataset import Load
 from mlforge.tui.screens.preview import Preview, TypeReview
 from mlforge.tui.screens.shell import Help, ResizeGuard
@@ -32,7 +33,7 @@ async def open_preview(app, pilot, path):
 @pytest.mark.parametrize("size", [(80, 24), (100, 30)])
 async def test_real_override_reset_confirmation_and_invalidation(tmp_path, size):
     path = tmp_path / "synthetic.csv"
-    text = "number,zip,label\n1,001,a\n2,002,b\n"
+    text = "number,zip,label\n" + "1,001,a\n2,002,b\n" * 10
     path.write_text(text)
     app = MLForgeApp(Service())
     async with app.run_test(size=size) as pilot:
@@ -56,10 +57,13 @@ async def test_real_override_reset_confirmation_and_invalidation(tmp_path, size)
         assert not state.confirmed and app.focused.id == "change-type"
         await pilot.press("shift+tab", "enter")
         assert app.service.snapshot.confirmed
-        assert owner.query_one("#correct", Button).disabled
+        await until(lambda: isinstance(app.screen, Goal))
+        await pilot.press("escape")
+        assert app.screen is owner
+        assert not owner.query_one("#correct", Button).disabled
         assert "Dataset confirmed" in str(owner.query_one("#status", Static).content)
         app.service.choose_task("classification")
-        await pilot.press("enter")  # Disabled correct yields focus to Change type.
+        await pilot.press("tab", "enter")  # Change type after returning from Goal.
         assert isinstance(app.screen, TypeReview)
         await pilot.press("end", "enter")
         await until(lambda: app.screen is owner)
@@ -77,7 +81,7 @@ async def test_real_override_reset_confirmation_and_invalidation(tmp_path, size)
                 and bool(str(app.screen.query_one("#error", Static).content))
             )
         )
-        assert "2 values" in str(app.screen.query_one("#error", Static).content)
+        assert "20 values" in str(app.screen.query_one("#error", Static).content)
         assert "Data rows: 1, 2" in str(app.screen.query_one("#error", Static).content)
         assert (
             app.service.snapshot.schema.profile("c2").effective == ColumnType.CATEGORY

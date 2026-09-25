@@ -8,6 +8,7 @@ from textual.widgets.option_list import Option
 from mlforge.contracts import DomainError
 from mlforge.datasets.records import ColumnType, preview, visible_text
 from mlforge.tui.help import CATALOG
+from mlforge.tui.screens.configuration import ConfigurationFrame, Goal
 from mlforge.tui.screens.prepare import Prepare
 from mlforge.tui.screens.shell import Action, Busy, Frame, operation_message
 
@@ -27,7 +28,9 @@ def snippet(value, width=24):
     return text
 
 
-class Preview(Frame):
+class Preview(ConfigurationFrame):
+    stage = "Dataset"
+    primary_id = "columns"
     heading = "Review your dataset"
     help_topic = "preview"
     status = "Arrows: inspect tables · Tab: switch controls · ?: full details"
@@ -49,6 +52,7 @@ class Preview(Frame):
         )
         yield DataTable(id="columns", cursor_type="row", zebra_stripes=False)
         yield Static("", id="column-note", markup=False)
+        yield Static("", id="error", classes="error", markup=False)
         yield Static(self.view["label"], id="preview-label", markup=False)
         yield DataTable(id="rows", cursor_type="cell", zebra_stripes=False)
 
@@ -178,7 +182,7 @@ class Preview(Frame):
             f"{len(self.dataset.rows):,} rows · {len(self.dataset.columns)} columns · "
             f"{overrides} overrides · {warnings} columns with notes"
         )
-        self.query_one("#correct", Button).disabled = state.confirmed
+        self.query_one("#correct", Button).disabled = False
         self.query_one("#status", Static).update(
             "[x] Dataset confirmed. Chosen types accepted; ready to choose a goal."
             if state.confirmed
@@ -205,6 +209,7 @@ class Preview(Frame):
         elif event.button.id == "correct":
             self.app.service.confirm_schema()
             self.refresh_schema()
+            self.review(Goal)
         elif event.button.id == "prepare":
             self.app.push_screen(Prepare(self.dataset.source_format))
         else:

@@ -23,6 +23,7 @@ from mlforge.application.service import Service
 from mlforge.application.state import Activity
 from mlforge.datasets.records import ColumnType
 from mlforge.tui.app import MLForgeApp
+from mlforge.tui.screens.configuration import Goal
 from mlforge.tui.screens.dataset import Browse, Load, PathEntry
 from mlforge.tui.screens.prepare import Prepare, SavePrompt
 from mlforge.tui.screens.preview import Preview, TypeReview
@@ -65,6 +66,9 @@ async def pilot_journey(evidence):
             assert not app.service.snapshot.confirmed
             await activate(app, pilot, "correct")
             assert app.service.snapshot.confirmed
+            await until(lambda: isinstance(app.screen, Goal))
+            await pilot.press("escape")
+            assert isinstance(app.screen, Preview)
             await quit_app(app, pilot)
         assert resource.read_bytes() == original
 
@@ -100,6 +104,9 @@ async def pilot_journey(evidence):
             assert not app.service.snapshot.schema.profile("c0").overridden
             await activate(app, pilot, "correct")
             assert app.service.snapshot.confirmed
+            await until(lambda: isinstance(app.screen, Goal))
+            await pilot.press("escape")
+            assert isinstance(app.screen, Preview)
             await activate(app, pilot, "prepare")
             assert isinstance(app.screen, Prepare)
             prompt = app.screen.query_one("#prompt", TextArea)

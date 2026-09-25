@@ -61,3 +61,55 @@ CATALOG = {
         "Help stays available while work continues.",
     ),
 }
+
+CATALOG.update(
+    {
+        "goal": (
+            "Choose a goal",
+            "Choose one of the four tasks. Help on a goal explains its data "
+            "requirements.",
+        ),
+        "classification": (
+            "Predict an outcome",
+            "Learn discrete outcomes, such as a product category. The target "
+            "needs 2–20 classes and at least five rows per class; no missing "
+            "targets.",
+        ),
+        "regression": (
+            "Predict a number",
+            "Learn a numeric outcome, such as a price. Choose a finite Number "
+            "target with at least two distinct values and no missing targets.",
+        ),
+        "clustering": (
+            "Find groups",
+            "Explore groups of similar rows with K-Means. There is no target or "
+            "holdout test; results describe this dataset.",
+        ),
+        "reduction": (
+            "Reduce complexity",
+            "Summarize at least two varying Number inputs using PCA. There is no "
+            "target or holdout test. Dimensions are bounded by the selected "
+            "features and rows.",
+        ),
+        "target": (
+            "Choose what to predict",
+            "No target is chosen automatically. Suggested columns pass "
+            "eligibility checks; Show all columns exposes other columns and "
+            "reasons. Review types in Preview to change interpretation.",
+        ),
+        "features": (
+            "Choose the information to use",
+            "Defaults select usable inputs. The target, constants, identifiers "
+            "and dates cannot be inputs. Space toggles the focused row. Warnings "
+            "identify possible leakage or high cardinality; explicitly keep them "
+            "or change the selection.",
+        ),
+        "preprocessing": (
+            "Automatic preprocessing",
+            "Supervised data is split before any fitting. Each candidate fits its "
+            "own imputation, encoding and scaling on training rows only. Unseen "
+            "categories use the fitted encoder's unknown-category behavior. "
+            "Models are never silently refitted for prediction or export.",
+        ),
+    }
+)

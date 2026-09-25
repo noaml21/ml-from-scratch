@@ -165,3 +165,6 @@ TextArea > .text-area--selection { background: $selected; color: $text; }
 
 .message-error { color: $error; }
 .message-success { color: $success; }
+
+.warning { color: $warning; }
+Features #choices { max-height: 8; }

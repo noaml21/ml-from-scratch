@@ -107,7 +107,7 @@ class MLForgeApp(App):
             self.push_screen(
                 Confirm(
                     "Discard current results?",
-                    "Changing the dataset or its types discards this experiment.",
+                    "Changing data or experiment choices discards current results.",
                     accept="Discard results",
                     keep="Keep results",
                 ),
