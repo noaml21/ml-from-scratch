@@ -48,6 +48,7 @@ class MLForgeApp(App):
                 error="#FF8A91",
                 text_alpha=1,
                 variables={
+                    "text": "#E6EEF3",
                     "text-muted": "#AEC0CC",
                     "text-disabled": "#AEC0CC",
                     "border": "#526975",

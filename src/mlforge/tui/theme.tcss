@@ -113,7 +113,9 @@ Input {
 }
 Input:focus {
     border: solid $accent;
+    background-tint: transparent;
 }
+Input > .input--selection { background: $selected; color: $text; }
 Welcome #stage, Welcome #actions, Welcome #status { display: none; }
 Welcome #body-region { height: 1fr; align-horizontal: center; }
 Welcome #body { align: center middle; }

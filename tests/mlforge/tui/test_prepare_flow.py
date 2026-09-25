@@ -229,6 +229,39 @@ async def test_save_disk_failure_and_quit_waits_for_owned_writer(tmp_path, monke
     assert not list(tmp_path.glob(".mlforge-prompt-*"))
 
 
+async def test_selected_input_uses_readable_canonical_pair(monkeypatch):
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    app = MLForgeApp(Service())
+    async with app.run_test(size=(80, 24)) as pilot:
+        await app.push_screen(SavePrompt("CSV", "PREVIEW"))
+        await pilot.press("ctrl+shift+a")
+        field = app.focused
+        assert app.get_css_variables()["text"] == "#E6EEF3"
+        style = field.get_component_rich_style("input--selection")
+        assert style.color.triplet == (230, 238, 243)
+        assert style.bgcolor.triplet == (36, 66, 71)
+        assert field.styles.background_tint.a == 0
+
+        def luminance(rgb):
+            parts = [v / 255 for v in rgb]
+            linear = [
+                v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+                for v in parts
+            ]
+            return sum(v * w for v, w in zip(linear, (0.2126, 0.7152, 0.0722)))
+
+        contrast = (luminance(style.color.triplet) + 0.05) / (
+            luminance(style.bgcolor.triplet) + 0.05
+        )
+        assert contrast >= 4.5
+        await pilot.pause()
+        svg = app.export_screenshot()
+        assert 'fill="#244247"' in svg
+        destination = Path(".mlforge-build/p06-prepare")
+        destination.mkdir(parents=True, exist_ok=True)
+        app.save_screenshot("input-selection-80.svg", path=str(destination))
+
+
 @pytest.mark.parametrize("monochrome", [False, True])
 async def test_prepare_visual_evidence(tmp_path, monkeypatch, monochrome):
     if monochrome:

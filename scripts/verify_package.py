@@ -12,10 +12,28 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 WORK = ROOT / ".mlforge-build"
+NETWORK_GUARD = """
+import os
+import sys
+from pathlib import Path
+ACTIVE = True
+log = Path(os.environ['MLFORGE_GUARD_LOG'])
+with log.open('a') as stream:
+    stream.write(f'active {os.getpid()}\\n')
+def reject_network(event, args):
+    if event in {'socket.connect', 'socket.connect_ex', 'socket.getaddrinfo',
+                 'socket.gethostbyname', 'socket.sendto'}:
+        with log.open('a') as stream:
+            stream.write(f'denied {event}\\n')
+        os._exit(93)
+sys.addaudithook(reject_network)
+"""
 
 
 def run(command, *, cwd, env=None):
-    result = subprocess.run(command, cwd=cwd, env=env, capture_output=True, text=True)
+    result = subprocess.run(
+        command, cwd=cwd, env=env, capture_output=True, text=True, timeout=600
+    )
     if result.returncode:
         raise RuntimeError(
             f"Command failed ({result.returncode}): {command}\n"
@@ -34,7 +52,7 @@ def verify(wheelhouse):
     env.pop("PYTHONPATH", None)
     WORK.mkdir(exist_ok=True)
     evidence = {"python": sys.version, "installations": []}
-    with tempfile.TemporaryDirectory(prefix="package-", dir=WORK) as temporary:
+    with tempfile.TemporaryDirectory(prefix="mlforge-package-") as temporary:
         root = Path(temporary)
         dist = root / "dist"
         run(
@@ -117,6 +135,67 @@ def verify(wheelhouse):
                 env=env,
             )
             assert str(venv) in location, location
+            site = Path(
+                run(
+                    [
+                        python,
+                        "-I",
+                        "-c",
+                        "import sysconfig; print(sysconfig.get_path('purelib'))",
+                    ],
+                    cwd=root,
+                    env=env,
+                )
+            )
+            (site / "mlforge_installed_guard.py").write_text(NETWORK_GUARD)
+            (site / "zz_mlforge_installed_guard.pth").write_text(
+                "import mlforge_installed_guard\n"
+            )
+            destination = WORK / f"installed-{sys.version_info.minor}-{kind}"
+            destination.mkdir(exist_ok=True)
+            control_env = dict(env, MLFORGE_GUARD_LOG=str(destination / "control.log"))
+            control = subprocess.run(
+                [
+                    python,
+                    "-I",
+                    "-c",
+                    "import socket; socket.socket().connect(('127.0.0.1', 9))",
+                ],
+                cwd=root,
+                env=control_env,
+                capture_output=True,
+                timeout=30,
+            )
+            assert control.returncode == 93, "Installed network guard inactive"
+            runtime = root / f"{kind}-runtime"
+            runtime.mkdir()
+            temporary_files = runtime / "temporary"
+            temporary_files.mkdir()
+            log = destination / "network.log"
+            log.write_text("")
+            guarded_env = dict(
+                env,
+                MLFORGE_GUARD_LOG=str(log),
+                TMPDIR=str(temporary_files),
+                OPENBLAS_NUM_THREADS="1",
+                OMP_NUM_THREADS="1",
+            )
+            run(
+                [
+                    python,
+                    "-I",
+                    str(ROOT / "scripts/installed_dataset_smoke.py"),
+                    str(destination),
+                    str(ROOT),
+                ],
+                cwd=runtime,
+                env=guarded_env,
+            )
+            attempts = log.read_text().splitlines()
+            assert attempts and all(line.startswith("active ") for line in attempts)
+            # Real loads/overrides use fresh operation interpreters, each guarded.
+            assert len(attempts) >= 12, "Missing child network-guard evidence"
+            assert not list(temporary_files.iterdir()), "Installed session leaked files"
             examples = run(
                 [
                     python,
@@ -137,18 +216,24 @@ print('5 packaged examples parsed and inferred')
 """,
                 ],
                 cwd=root,
-                env=env,
+                env=guarded_env,
             )
             evidence["installations"].append(
                 {
                     "kind": kind,
                     "status": "passed",
                     "examples": examples,
-                    "pip_check": run([python, "-m", "pip", "check"], cwd=root, env=env),
+                    "dataset_journey": json.loads(
+                        (destination / "journey.json").read_text()
+                    ),
+                    "network_guard": "active in parent/children; zero attempts",
+                    "pip_check": run(
+                        [python, "-m", "pip", "check"], cwd=root, env=guarded_env
+                    ),
                     "versions": run(
                         [python, "-m", "pip", "list", "--format=json"],
                         cwd=root,
-                        env=env,
+                        env=guarded_env,
                     ),
                 }
             )

@@ -14,8 +14,7 @@ examples, six-model fitting/evaluation and standalone model export are implement
 the Textual shell supports local browsing, manual paths, packaged examples and a
 first-50-row preview with schema statistics and complete cell details.
 Schema correction, reset, explicit confirmation and local Prepare Copy/Save are
-implemented. The remaining task journey is in progress.
-The complete dataset review and training/export screens are still in progress. Current progress and verification are in
+implemented. The dataset phase gate and remaining training/export screens are in progress. Current progress and verification are in
 [BUILD_STATE](docs/v1/BUILD_STATE.md). The educational algorithms below remain supported.
 
 Development setup (CPython 3.12 or 3.13 on Ubuntu 24.04 x86_64):
@@ -38,7 +37,9 @@ python scripts/verify_package.py --prepare-wheelhouse
 python scripts/verify_package.py
 ```
 
-The package verifier checks app packaging. The ordinary test suite also includes
+The package verifier checks app packaging and the installed dataset journey through
+Pilot and real PTYs, with network attempts blocked in parent and worker processes.
+The ordinary test suite also includes
 six real exported-model consumer installations and requires the prepared local
 wheelhouse; missing prerequisites fail explicitly. The full TUI journey is not yet release verified. Run `mlforge` for the current shell.
 

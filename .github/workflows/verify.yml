@@ -55,4 +55,5 @@ jobs:
           path: |
             .mlforge-build/package-*.json
             .mlforge-build/consumer-*.json
+            .mlforge-build/installed-*/
           include-hidden-files: true
