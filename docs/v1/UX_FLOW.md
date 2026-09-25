@@ -53,3 +53,5 @@ Starting a new dataset or changing a completed experiment confirms discard once;
 
 ## Visual verification deliverables
 Use Pilot navigation assertions plus human-readable SVG captures from synthetic fixtures at 100x30 and 80x24: welcome, picker, preview override, help, training, partial failure, results, try validation, export success/error. Record checks in V1_BUILD_REPORT; generated captures alone do not prove focus/cancellation. A real PTY smoke verifies alternate-screen restoration after normal quit, Ctrl+C and handled failure. No physical mouse required.
+
+Prepare Copy explicitly uses the terminal clipboard request supported by Textual. Terminal settings may refuse OSC52 without an acknowledgement, so the UI reports a request rather than claiming verified delivery; selectable text and Save remain available. Small atomic prompt saves use a visible saving state: Back waits, and quit offers Finish and quit / Stay here, default Stay here. This is separate from cancellable CPU/model operations.

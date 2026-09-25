@@ -99,6 +99,20 @@ class MLForgeApp(App):
             topic = getattr(self.screen, "help_topic", "welcome")
         self.push_screen(Help(*CATALOG[topic]), lambda _: self._resume())
 
+    def confirm_discard(self, change):
+        if not self.service.snapshot.results:
+            change(False)
+        else:
+            self.push_screen(
+                Confirm(
+                    "Discard current results?",
+                    "Changing the dataset or its types discards this experiment.",
+                    accept="Discard results",
+                    keep="Keep results",
+                ),
+                lambda accepted: change(True) if accepted else None,
+            )
+
     def return_to_load(self):
         """Return to the existing chooser without replacing accepted session state."""
         while not isinstance(self.screen, (Load, Welcome)):
@@ -112,6 +126,8 @@ class MLForgeApp(App):
             self.screen.focus_next()
             return
         if isinstance(self.screen, (ModalScreen, ResizeGuard, Welcome)):
+            return
+        if self.service.snapshot.activity == Activity.SAVING:
             return
         if self.service.snapshot.activity != Activity.IDLE:
             self.push_screen(
@@ -137,7 +153,18 @@ class MLForgeApp(App):
         if self._quitting or isinstance(self.screen, Confirm):
             return
         state = self.service.snapshot
-        if state.activity not in (Activity.IDLE, Activity.CLOSED):
+        if state.activity == Activity.SAVING:
+            self.push_screen(
+                Confirm(
+                    "Finish save and quit?",
+                    "The prompt save and temporary-file cleanup "
+                    "will finish before closing.",
+                    accept="Finish and quit",
+                    keep="Stay here",
+                ),
+                self._confirm_quit,
+            )
+        elif state.activity not in (Activity.IDLE, Activity.CLOSED):
             self.push_screen(
                 Confirm(
                     "Quit MLForge?",

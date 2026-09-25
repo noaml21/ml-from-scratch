@@ -51,6 +51,7 @@ ALLOWED = {
         "contracts",
         "datasets.records",
         "datasets.importers",
+        "datasets.prepare",
         "tasks",
         "models",
         "evaluation",

@@ -16,6 +16,7 @@ from mlforge.execution.protocol import EventKind, Identity
 
 class Activity(StrEnum):
     IDLE = "idle"
+    SAVING = "saving_prompt"
     RUNNING = "running"
     CANCELLING = "cancelling"
     CLOSED = "closed"

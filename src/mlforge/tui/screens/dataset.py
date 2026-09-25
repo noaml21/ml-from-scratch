@@ -12,8 +12,9 @@ from textual.widgets.option_list import Option
 
 from mlforge.contracts import DomainError
 from mlforge.datasets.records import visible_text
+from mlforge.tui.screens.prepare import Prepare
 from mlforge.tui.screens.preview import Preview
-from mlforge.tui.screens.shell import Action, Busy, Frame
+from mlforge.tui.screens.shell import Action, Busy, Frame, operation_message
 
 
 class Welcome(Frame):
@@ -68,22 +69,45 @@ class Source(Frame):
         self.query_one("#error", Static).update(f"Error: {message}")
         self.query_one(f"#{self.primary_id}").focus()
 
+    def show_preparation(self):
+        self.app.push_screen(
+            Prepare(
+                getattr(self, "source_format", None),
+                getattr(self, "diagnostic", "PREVIEW"),
+            )
+        )
+
+    def request_load(self, path, *, example=False):
+        self.app.confirm_discard(
+            lambda discard: self.load(path, example=example, discard=discard)
+        )
+
     @work(group="dataset", exclusive=True)
-    async def load(self, path, *, example=False):
+    async def load(self, path, *, example=False, discard=False):
+        self.source_format = next(
+            (
+                item.label
+                for item in self.app.service.formats
+                if item.extension == Path(path).suffix.lower()
+            ),
+            None,
+        )
         await self.app.push_screen(Busy(Path(path).name))
         try:
             accepted = (
-                await self.app.service.load_example(path)
+                await self.app.service.load_example(path, discard=discard)
                 if example
-                else await self.app.service.load(path)
+                else await self.app.service.load(path, discard=discard)
             )
-            failure = self.app.service.snapshot.failure
-            message = (
-                f"{failure.message} {failure.action}"
-                if failure
-                else "Loading stopped. Choose a source or retry the selection."
+            state = self.app.service.snapshot
+            self.diagnostic = (
+                state.failure.code if state.failure else state.error_code or "PREVIEW"
+            )
+            message = operation_message(
+                state, "Loading stopped. Choose a source or retry the selection."
             )
         except DomainError as error:
+            self.diagnostic = error.code
             accepted = False
             message = f"{error.message} {error.action}"
 
@@ -109,6 +133,7 @@ class PathEntry(Source):
 
     def actions(self):
         yield Action("Load dataset", id="load", variant="primary")
+        yield Action("Prepare with AI", id="prepare")
         yield Action("Back", id="back")
 
     def on_mount(self):
@@ -120,6 +145,8 @@ class PathEntry(Source):
     def on_button_pressed(self, event: Button.Pressed):
         if event.button.id == "load":
             self.start_load()
+        elif event.button.id == "prepare":
+            self.show_preparation()
         else:
             self.app.action_back()
 
@@ -133,7 +160,7 @@ class PathEntry(Source):
             self.fail("Enter a local path, then choose Load dataset.")
             return
         self.query_one("#error", Static).update("")
-        self.load(path)
+        self.request_load(path)
 
 
 class LocalTree(DirectoryTree):
@@ -201,6 +228,7 @@ class Browse(Source):
 
     def actions(self):
         yield Action("Parent folder", id="parent", variant="primary")
+        yield Action("Prepare with AI", id="prepare")
         yield Action("Back", id="back")
 
     def on_mount(self):
@@ -212,10 +240,11 @@ class Browse(Source):
         tree.reload()
 
     def on_local_tree_unreadable(self, event: LocalTree.Unreadable):
+        self.diagnostic = "FILE_READ"
         self.fail("Directory is unreadable. Choose Parent folder or go Back.")
 
     def on_directory_tree_file_selected(self, event: DirectoryTree.FileSelected):
-        self.load(event.path)
+        self.request_load(event.path)
 
     def on_directory_tree_directory_selected(
         self, event: DirectoryTree.DirectorySelected
@@ -227,7 +256,9 @@ class Browse(Source):
         self.query_one("#error", Static).update("")
 
     def on_button_pressed(self, event: Button.Pressed):
-        if event.button.id == "parent":
+        if event.button.id == "prepare":
+            self.show_preparation()
+        elif event.button.id == "parent":
             tree = self.query_one("#files", LocalTree)
             tree.path = tree.path.parent
             self.query_one("#directory", Static).update(visible_text(str(tree.path)))
@@ -255,6 +286,7 @@ class Examples(Source):
         yield Static("", id="error", classes="error", markup=False)
 
     def actions(self):
+        yield Action("Prepare with AI", id="prepare")
         yield Action("Back", id="back")
 
     def on_mount(self):
@@ -270,7 +302,10 @@ class Examples(Source):
         )
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected):
-        self.load(event.option_id, example=True)
+        self.request_load(event.option_id, example=True)
 
     def on_button_pressed(self, event: Button.Pressed):
-        self.app.action_back()
+        if event.button.id == "prepare":
+            self.show_preparation()
+        else:
+            self.app.action_back()

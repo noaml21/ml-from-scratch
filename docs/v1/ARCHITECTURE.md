@@ -46,7 +46,7 @@ The table lists permitted first-party dependencies across module boundaries. Imp
 | execution.protocol | contracts |
 | execution.coordinator | contracts, execution.protocol |
 | execution.worker | contracts, execution.protocol, datasets, tasks, preprocessing, models, training, evaluation, prediction, export |
-| application | contracts, datasets.records, datasets.importers (format/example descriptors), tasks, models, evaluation (ranking), execution.coordinator, execution.protocol |
+| application | contracts, datasets.records, datasets.importers (format/example descriptors), datasets.prepare (safe prompt generation/publication), tasks, models, evaluation (ranking), execution.coordinator, execution.protocol |
 | tui | application, contracts, datasets.records; never execution/core service entrypoints |
 | __main__ | application, tui; explicit composition only |
 
@@ -178,3 +178,5 @@ The existing bootstrap composes `MLForgeApp(Service())`. Presentation owns scree
 P06 source screens consume application-exposed format/example descriptors. `Service.load_example` resolves only allowlisted package resources and delegates to ordinary load. The shared stdlib-only `datasets.records.visible_text` helper escapes controls for presentation without touching canonical cell values; `datasets.validation` reuses it. No TUI import of importer/validation services is added.
 
 P06 preview uses the pure `datasets.records.preview` projection over accepted records, with optional bounded text snippets. `datasets.validation.preview` remains an explicit compatibility import. TUI owns cell-width truncation and contextual detail rendering; full selected values come from immutable records. This adds no service dependency, file read, inference, or parallel session state.
+
+P06 Prepare uses the narrow application→datasets.prepare edge: the service exposes safe generated text and invokes the existing small atomic no-overwrite writer through shielded I/O. `Activity.SAVING` locks commands; Back waits and quit explicitly waits for the writer and cleanup. This is not CPU execution or a cancellable model worker. Service.close waits for it through the same idle barrier. No raw data enters the prompt, and TUI never imports the writer.

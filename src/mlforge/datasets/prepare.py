@@ -30,10 +30,14 @@ def preparation_prompt(
 ) -> str:
     format_name = (
         source_format
-        if source_format in {"CSV", "TSV", "JSONL"}
+        if isinstance(source_format, str) and source_format in {"CSV", "TSV", "JSONL"}
         else "unsupported or unknown"
     )
-    issue = diagnostic if diagnostic in SAFE_CODES else "unspecified structure"
+    issue = (
+        diagnostic
+        if isinstance(diagnostic, str) and diagnostic in SAFE_CODES
+        else "unspecified structure"
+    )
     return (
         "You are helping me convert a local dataset to a clean tabular file. I will "
         "separately decide what source material to share. The source format is "
@@ -65,13 +69,13 @@ def preparation_prompt(
 
 
 def save_prompt(destination: str | Path, prompt: str) -> Path:
-    path = Path(destination).expanduser()
-    if path.suffix.lower() != ".txt":
-        raise DomainError(
-            "PROMPT_NAME", "Use a .txt filename.", "Choose a prompt destination."
-        )
     temporary = None
     try:
+        path = Path(destination).expanduser()
+        if path.suffix.lower() != ".txt":
+            raise DomainError(
+                "PROMPT_NAME", "Use a .txt filename.", "Choose a prompt destination."
+            )
         with tempfile.NamedTemporaryFile(
             mode="w",
             encoding="utf-8",
@@ -84,11 +88,13 @@ def save_prompt(destination: str | Path, prompt: str) -> Path:
             stream.flush()
             os.fsync(stream.fileno())
         os.link(temporary, path)
+    except DomainError:
+        raise
     except FileExistsError:
         raise DomainError(
             "PROMPT_EXISTS", "That file already exists.", "Choose a different filename."
         ) from None
-    except (OSError, ValueError):
+    except (OSError, ValueError, RuntimeError):
         raise DomainError(
             "PROMPT_SAVE",
             "Could not save the prompt.",
@@ -97,4 +103,4 @@ def save_prompt(destination: str | Path, prompt: str) -> Path:
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)
-    return path
+    return path.absolute()

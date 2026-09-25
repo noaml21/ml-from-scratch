@@ -60,3 +60,19 @@ def test_save_exclusive_private_and_failure(tmp_path, monkeypatch):
     assert caught.value.code == "PROMPT_SAVE"
     assert not (tmp_path / "failed.txt").exists()
     assert not list(tmp_path.glob(".mlforge-prompt-*"))
+
+
+def test_invalid_descriptions_and_permission_failure_are_safe(tmp_path, monkeypatch):
+    from mlforge.datasets import prepare
+
+    assert "unsupported or unknown" in preparation_prompt({}, [])
+
+    def denied(*args, **kwargs):
+        raise PermissionError("private directory details")
+
+    monkeypatch.setattr(prepare.tempfile, "NamedTemporaryFile", denied)
+    with pytest.raises(DomainError) as error:
+        save_prompt(tmp_path / "prompt.txt", preparation_prompt())
+    assert error.value.code == "PROMPT_SAVE"
+    assert "private directory" not in str(error.value)
+    assert not list(tmp_path.iterdir())

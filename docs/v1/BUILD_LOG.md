@@ -462,3 +462,18 @@ Current pointer: [BUILD_STATE.md](BUILD_STATE.md). This file records historical 
 
 ## P06.3.a VERIFIED
 - Affected TUI/application commands/datasets/architecture: 143 passed in 166.27s (26464 exit 0), p06-types-subsystem.log. Ruff/format (101 files), planning and diff passed. No consumer/runtime change. Reviewed changed service type-error handling, shared shell/preview code, tests and guides. Commit: feat(tui): review and confirm dataset types. Continue P06.3.b immediately; 17/30 until the complete P06.3 gate.
+
+## P06.3.b starts — Prepare and recovery
+- e8f3266e4093790110f0cf2252115d83e5efb750 pushed. Add narrow application→datasets.prepare edge for pure safe prompt generation and the existing atomic writer; no TUI core-service bypass. Prompt saving is shielded I/O with explicit saving state, locked controls and wait-before-quit; CPU/model cancellation remains unchanged.
+- Use Textual terminal clipboard only after explicit Copy. OSC52 has no delivery acknowledgement: report request sent, always retain selectable text/Save. Catch unavailable/write failures with safe fallback. No subprocess clipboard helper or network.
+- Reproduced save_prompt with a nonexistent ~user destination raising uncaught RuntimeError; normalize this in the owning dataset helper and add regression coverage.
+
+- P06.3.b focused matrix: 36 passed in 81.57s (5344 exit 0); .mlforge-build/p06-prepare-focused.log. Real saves/collisions/path failures and source errors, explicit clipboard requests/failure fallback, privacy, resize, held-writer quit barrier and injected fsync failure passed. Boundary predecessor 35 passed (50196).
+- Color/mono Prepare and Save-error renders inspected at 80x24; prompt is readable/selectable/scrollable and actions pinned. Atomic save does not expose a false cancellation action. Added actual malformed/crashed/ignoring-child UI tests and type-completion overlay races before the broad subsystem run (81001, p06-prepare-subsystem.log). No network or clipboard helper subprocess introduced.
+
+- P06.3.b broad subsystem: 183 passed in 262.35s (81001 exit 0), p06-prepare-subsystem.log. Includes actual malformed/crashed/SIGTERM-ignoring children, cancel/reap and type-completion help/resize races; application state and dataset checks passed. Final visual tweaks use canonical error/success colors and accurate resize-guard instructions while saving. Added safe permission-denial and malformed-description regression; final focused checks running 18541, p06-prepare-final.log.
+
+## P06.3.b VERIFIED — Prepare and dataset recovery
+- Final focused run: 37 passed in 83.78s (18541 exit 0), .mlforge-build/p06-prepare-final.log. Preceding affected subsystem: 183 passed in 262.35s. CPython 3.12.3; repository cwd. Final Ruff/format (104 files), planning and diff checks passed. No runtime/export change or consumer reinstall.
+- Refreshed color/monochrome 80x24 Save-error captures inspected: retained destination, readable Error and recovery, visible Save/Back, input focus and footer. Prompt/type/source captures cover 80/100/140 layouts as recorded above. Atomic Save waits through quit and below-minimum resize; malformed/crashed/cancelled child paths preserve data and reap ownership. Terminal clipboard delivery cannot be acknowledged; wording explicitly reports a request with Save fallback.
+- Reviewed application/service state, narrow architecture edge, canonical prompt writer, TUI presentation/navigation and new behavioral tests. Commit: feat(tui): prepare and recover local datasets. P06.3.c remains NOT STARTED; no P06 phase/CI completion claim. Continue installed dataset-journey verifier and full gate.

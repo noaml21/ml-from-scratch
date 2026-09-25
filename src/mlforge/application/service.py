@@ -28,6 +28,7 @@ from mlforge.contracts import (
     TaskKind,
 )
 from mlforge.datasets.importers import EXAMPLES, FORMATS
+from mlforge.datasets.prepare import preparation_prompt, save_prompt
 from mlforge.datasets.records import (
     ColumnType,
     dataset_data,
@@ -192,6 +193,27 @@ class Service:
             _error("EXAMPLE", "Choose a packaged example.", "Return to examples.")
         with as_file(files("mlforge").joinpath("examples", filename)) as path:
             return await self.load(path, discard=discard)
+
+    def preparation_text(self, source_format=None, diagnostic="PREVIEW"):
+        return preparation_prompt(source_format, diagnostic)
+
+    async def save_preparation(
+        self, destination, source_format=None, diagnostic="PREVIEW"
+    ):
+        """Atomic prompt publication; wait for writer cleanup before closing."""
+        self._open_command(discard=True)
+        self._idle.clear()
+        self._state = replace(self._state, activity=Activity.SAVING)
+        try:
+            return await self._io(
+                save_prompt,
+                destination,
+                self.preparation_text(source_format, diagnostic),
+            )
+        finally:
+            if not self._closing:
+                self._state = replace(self._state, activity=Activity.IDLE)
+            self._idle.set()
 
     async def change_type(self, column_id, kind, *, discard=False):
         self._open_command(discard)

@@ -8,7 +8,8 @@ from textual.widgets.option_list import Option
 from mlforge.contracts import DomainError
 from mlforge.datasets.records import ColumnType, preview, visible_text
 from mlforge.tui.help import CATALOG
-from mlforge.tui.screens.shell import Action, Busy, Frame
+from mlforge.tui.screens.prepare import Prepare
+from mlforge.tui.screens.shell import Action, Busy, Frame, operation_message
 
 WARNINGS = {
     "MIXED_KINDS": "Mixed scalar kinds; review the type before continuing.",
@@ -194,6 +195,7 @@ class Preview(Frame):
     def actions(self):
         yield Action("Looks correct", id="correct", variant="primary")
         yield Action("Change type", id="change-type")
+        yield Action("Preview is not correct", id="prepare")
         yield Action("Choose another dataset", id="another")
 
     def on_button_pressed(self, event: Button.Pressed):
@@ -203,6 +205,8 @@ class Preview(Frame):
         elif event.button.id == "correct":
             self.app.service.confirm_schema()
             self.refresh_schema()
+        elif event.button.id == "prepare":
+            self.app.push_screen(Prepare(self.dataset.source_format))
         else:
             self.app.return_to_load()
 
@@ -263,20 +267,20 @@ class TypeReview(Frame):
         self.app.action_back()
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected):
-        self.apply_type(None if event.option_id == "reset" else event.option_id)
+        kind = None if event.option_id == "reset" else event.option_id
+        self.app.confirm_discard(lambda discard: self.apply_type(kind, discard=discard))
 
     @work(group="schema", exclusive=True)
-    async def apply_type(self, kind):
+    async def apply_type(self, kind, *, discard=False):
         await self.app.push_screen(
             Busy("Checking every present value", heading="Checking column type")
         )
         try:
-            accepted = await self.app.service.change_type(self.column_id, kind)
-            failure = self.app.service.snapshot.failure
-            message = (
-                f"{failure.message} {failure.action}"
-                if failure
-                else "Change stopped. Choose a type or go Back."
+            accepted = await self.app.service.change_type(
+                self.column_id, kind, discard=discard
+            )
+            message = operation_message(
+                self.app.service.snapshot, "Change stopped. Choose a type or go Back."
             )
         except DomainError as error:
             accepted, message = False, f"{error.message} {error.action}"

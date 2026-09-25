@@ -66,3 +66,5 @@ The prompt is structural help, not a bypass of import validation. Returning prep
 
 ## Synthetic resources
 Five installed examples live in `src/mlforge/examples/`, described by `EXAMPLES` beside format descriptors. Their README and `scripts/generate_examples.py` give deterministic row-index formulas (no random source or private inputs). Tests reproduce their exact bytes and run ordinary import/schema verification; installed wheel and sdist-derived wheel checks repeat the same resource path. There is no example-specific parsing shortcut.
+
+P06 Prepare is exposed by application commands, using the canonical safe prompt and writer. Invalid destinations (including unresolved ~user paths) produce DomainError; saved paths are absolute. Invalid diagnostic/format argument types also fall back to the safe generic description. Clipboard delivery is terminal-dependent and unacknowledged; Copy is explicit and Save/text fallback is always available.

@@ -35,6 +35,15 @@ CATALOG = {
         "such as NA remain values. Review types before confirming the dataset. "
         "Help and Back never change committed data.",
     ),
+    "prepare": (
+        "Local preparation guidance",
+        "The read-only prompt contains only safe format/error categories, never "
+        "your data or column names. Copy sends a request to your terminal clipboard "
+        "only when you activate it; terminal settings may refuse it. Select text or "
+        "Save to a new .txt file if Copy is unavailable. Saving is atomic and never "
+        "overwrites an existing file; Back and quit wait for publication to finish. "
+        "MLForge does not open a browser or contact an AI service.",
+    ),
     "types": (
         "Column types",
         "Every present value is checked before a type change is accepted. "

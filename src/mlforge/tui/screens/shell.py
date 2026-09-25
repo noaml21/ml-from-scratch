@@ -12,6 +12,14 @@ from mlforge.application.state import Activity
 from mlforge.datasets.records import visible_text
 
 
+def operation_message(state, stopped):
+    if state.failure:
+        return f"{state.failure.message} {state.failure.action}"
+    if state.error_code:
+        return f"Operation failed ({state.error_code}). Retry or go Back."
+    return stopped
+
+
 class Action(Button):
     """Compact action with a focus marker that remains visible without color."""
 
@@ -129,13 +137,18 @@ class ResizeGuard(Screen):
     def compose(self):
         yield Static("Resize to at least 80 × 24", classes="heading", markup=False)
         yield Static("", id="dimensions", markup=False)
-        yield Static("Esc: cancel active work · Ctrl+Q: quit", markup=False)
+        yield Static("", id="resize-actions", markup=False)
 
     def on_mount(self):
         self.update_dimensions()
 
     def update_dimensions(self):
         size = self.app.size
+        self.query_one("#resize-actions", Static).update(
+            "Saving prompt… Ctrl+Q: finish save and quit"
+            if self.app.service.snapshot.activity == Activity.SAVING
+            else "Esc: cancel active work · Ctrl+Q: quit"
+        )
         self.query_one("#dimensions", Static).update(
             f"Current size: {size.width} × {size.height}. Your work is preserved."
         )

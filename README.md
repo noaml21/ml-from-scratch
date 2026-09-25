@@ -13,8 +13,8 @@ The `v1/mlforge` branch is under construction. Packaging and noninteractive
 examples, six-model fitting/evaluation and standalone model export are implemented;
 the Textual shell supports local browsing, manual paths, packaged examples and a
 first-50-row preview with schema statistics and complete cell details.
-Schema correction, reset and explicit confirmation are implemented. Prepare and
-the remaining task journey are in progress.
+Schema correction, reset, explicit confirmation and local Prepare Copy/Save are
+implemented. The remaining task journey is in progress.
 The complete dataset review and training/export screens are still in progress. Current progress and verification are in
 [BUILD_STATE](docs/v1/BUILD_STATE.md). The educational algorithms below remain supported.
 

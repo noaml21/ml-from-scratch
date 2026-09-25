@@ -155,3 +155,11 @@ DataTable > .datatable--fixed { background: $surface; color: $text; }
 
 Preview #actions { layout: grid; grid-size: 2; grid-rows: 1 1; grid-columns: 1fr 1fr; }
 TypeReview #types { max-height: 8; }
+
+Prepare #actions { layout: grid; grid-size: 2; grid-rows: 1 1; grid-columns: 1fr 1fr; }
+TextArea { height: 1fr; min-height: 6; border: solid $border; background: $surface; color: $text; }
+TextArea:focus { border: solid $accent; }
+TextArea > .text-area--selection { background: $selected; color: $text; }
+
+.message-error { color: $error; }
+.message-success { color: $success; }

@@ -47,6 +47,8 @@ async def test_welcome_keyboard_help_focus_and_literal_input(size):
         await pilot.press("escape")
         assert app.focused.id == "load"
         await pilot.press("tab")
+        assert app.focused.id == "prepare"
+        await pilot.press("tab")
         assert app.focused.id == "back"
         await pilot.press("tab")
         assert app.focused is field

@@ -86,7 +86,7 @@ async def test_real_override_reset_confirmation_and_invalidation(tmp_path, size)
         await pilot.press("escape")
         assert app.screen is owner
         assert owner.query_one("#columns", DataTable).cursor_row == 2
-        await pilot.press("tab", "enter")  # Choose another dataset.
+        await pilot.press("tab", "tab", "enter")  # Choose another dataset.
         assert isinstance(app.screen, Load)
     assert path.read_text() == text
 
