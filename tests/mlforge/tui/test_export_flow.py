@@ -176,7 +176,10 @@ async def test_export_errors_retry_success_and_usage(task, tmp_path, monkeypatch
         assert b"private-rows" not in content and str(tmp_path).encode() not in content
         usage = app.screen.query_one("#usage", TextArea).text
         assert f"Created: {wheel}" in usage
-        assert f"python -m pip install \\\n    {wheel}" in usage
+        assert f"From {work}, install" in usage
+        assert (
+            "python -m pip install exports/churn_model-1.0.0-py3-none-any.whl" in usage
+        )
         assert "from churn_model import Predictor" in usage
         call = "transform" if task == TaskKind.REDUCTION else "predict"
         assert f"result = model.{call}({{'x': 0.0, 'z':" in usage

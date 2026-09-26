@@ -203,7 +203,7 @@ async def try_and_export(app, pilot, owner, selected, task, evidence):
     assert prediction is not None and app.service.snapshot.selected is selected
     shown = str(trial.query_one("#warnings", Static).content)
     assert "outside the fitted data range" in shown and "Missing input" in shown
-    app.save_screenshot(f"{task}-try-80.svg", path=str(evidence))
+    app.save_screenshot(f"{task}-try-{app.size.width}.svg", path=str(evidence))
     await pilot.press("b")
     await until(lambda: isinstance(app.screen, SelectedModel))
     await activate(app, pilot, "export")
@@ -219,7 +219,7 @@ async def try_and_export(app, pilot, owner, selected, task, evidence):
     wheel = Path(app.service.snapshot.exported_path)
     assert wheel.parent == Path.cwd() / "exports" and wheel.is_file()
     assert f"from {module} import Predictor" in app.screen.query_one(TextArea).text
-    app.save_screenshot(f"{task}-export-done-80.svg", path=str(evidence))
+    app.save_screenshot(f"{task}-export-done-{app.size.width}.svg", path=str(evidence))
     await activate(app, pilot, "results")
     await until(lambda: app.screen is owner)
     return {

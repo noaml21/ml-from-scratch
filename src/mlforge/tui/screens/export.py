@@ -24,6 +24,12 @@ def python_minor(candidate):
     return ".".join(version.split(".")[:2])
 
 
+def install_path(path):
+    """A short relative path when commands run from the current folder."""
+    path, here = Path(path), Path.cwd()
+    return str(path.relative_to(here)) if path.is_relative_to(here) else str(path)
+
+
 def usage_text(path, module_name, task, fields, minor):
     example = {}
     for field in fields:
@@ -44,11 +50,11 @@ def usage_text(path, module_name, task, fields, minor):
         [
             f"Created: {path}",
             "",
-            f"Install into a fresh Python {minor} virtual environment on Linux x86_64:",
+            f"From {Path.cwd()}, install into a fresh Python {minor} "
+            "virtual environment on Linux x86_64:",
             f"  python{minor} -m venv model-env",
             "  . model-env/bin/activate",
-            "  python -m pip install \\",
-            f"    {shlex.quote(str(path))}",
+            f"  python -m pip install {shlex.quote(install_path(path))}",
             "",
             "Use it from Python:",
             f"  from {module_name} import Predictor",
