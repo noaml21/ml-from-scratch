@@ -327,3 +327,26 @@ def test_model_option_bounds_reject_invalid_values_atomically(data, task, expect
         with pytest.raises(DomainError):
             service.choose_option(value)
         assert service.snapshot is before
+
+
+def test_selection_rejects_stale_revision(data):
+    service = configured(data)
+    accepted(service)
+    service._state = replace(
+        service.snapshot,
+        revisions=replace(service.snapshot.revisions, experiment=999),
+    )
+    with pytest.raises(DomainError, match="current model"):
+        service.select_candidate("classification.logistic")
+    assert service.snapshot.selected is None
+    assert service.ranked_results == () and service.recommended is None
+
+
+def test_selection_binds_to_displayed_run(data):
+    service = configured(data)
+    accepted(service)
+    with pytest.raises(DomainError, match="current model"):
+        service.select_candidate("classification.logistic", run_id="old-screen-run")
+    assert service.snapshot.selected is None
+    service.select_candidate("classification.logistic", run_id=service.snapshot.run.id)
+    assert service.snapshot.selected.model_id == "classification.logistic"

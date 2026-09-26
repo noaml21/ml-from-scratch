@@ -46,7 +46,7 @@ The table lists permitted first-party dependencies across module boundaries. Imp
 | execution.protocol | contracts |
 | execution.coordinator | contracts, execution.protocol |
 | execution.worker | contracts, execution.protocol, datasets, tasks, preprocessing, models, training, evaluation, prediction, export |
-| application | contracts, datasets.records, datasets.importers (format/example descriptors), datasets.prepare (safe prompt generation/publication), tasks, models, evaluation (ranking), execution.coordinator, execution.protocol |
+| application | contracts, datasets.records, datasets.importers (format/example descriptors), datasets.prepare (safe prompt generation/publication), tasks, models, evaluation (metric descriptors and ranking), execution.coordinator, execution.protocol |
 | tui | application, contracts, datasets.records; never execution/core service entrypoints |
 | __main__ | application, tui; explicit composition only |
 
@@ -193,3 +193,5 @@ P07 configuration screens render application descriptors/reviews and confirmed s
 P07 Models uses `Service.model_option_bounds` (the existing task-bound rule) and atomic `choose_option` validation. Model/option edits invalidate dependent results but harmless Back preserves selection. Preprocessing preview may validate with applicable model descriptors if the user has temporarily unchecked all models; it does not overwrite the actual empty selection, fit, create a Run or enable training. Training still requires the real nonempty model selection. This avoids trapping Back/re-entry before Models.
 
 P07 Training renders immutable Service snapshots and invokes `Service.train` from a Textual async worker. It does not spawn, signal, drain or fit. Internal `Run.cancelled` records the actual cancellation state when application ends a run, distinguishing retained cancelled results from shared-state aborts without changing acceptance or failure policy. A presentation-only cancel-and-back hook defers returning to Models until cleanup settles; overlay deferral and close remain app-owned.
+
+P07 Results obtains primary metric descriptors and ranking through Service; it formats accepted metric/diagnostic records only. `select_candidate(..., run_id=...)` optionally binds a presentation action to its displayed run and always verifies current revisions. Stale ranking/recommendation is suppressed. Results/Selected model/Inspection never read model files, compute scores, refit or own a parallel selection; the chosen model remains in Session. Successful/partially cancelled Training switches to Results only after Service cleanup and existing modal deferral. All-failed recovery stays in Training with safe candidate details and Back.

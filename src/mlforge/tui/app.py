@@ -9,6 +9,7 @@ from textual.widgets import Input, TextArea
 
 from mlforge.application.service import Service
 from mlforge.application.state import Activity
+from mlforge.contracts import CandidateStatus
 from mlforge.tui.help import CATALOG
 from mlforge.tui.screens.dataset import Load, Welcome
 from mlforge.tui.screens.shell import Confirm, Help, ResizeGuard
@@ -174,7 +175,10 @@ class MLForgeApp(App):
                 ),
                 self._confirm_quit,
             )
-        elif state.results and not state.exported_path:
+        elif (
+            any(c.status == CandidateStatus.COMPLETED for c in state.results)
+            and not state.exported_path
+        ):
             self.push_screen(
                 Confirm(
                     "Quit without exporting?",

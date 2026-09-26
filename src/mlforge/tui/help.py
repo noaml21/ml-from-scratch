@@ -169,3 +169,84 @@ CATALOG["training"] = (
     "candidates remain available. Help does not pause training. Back or quit "
     "offers cancellation with Keep running selected by default.",
 )
+
+CATALOG.update(
+    {
+        "results": (
+            "Review results",
+            "Only accepted completed models can be selected. Arrows move between "
+            "cells; ? shows the full value or metric explanation. [x] marks the "
+            "chosen model independently of the cursor. Failed or stopped rows "
+            "cannot be used. Back preserves the current configuration and results "
+            "until an edit is confirmed.",
+        ),
+        "selected-model": (
+            "Exact evaluated model",
+            "This is the pipeline used for the displayed evaluation, with its "
+            "fitted preprocessing unchanged. Selection and inspection never refit "
+            "on the full dataset. Partial runs retain only completed accepted "
+            "models.",
+        ),
+        "inspection": (
+            "Inspect diagnostics",
+            "These are the accepted evaluation diagnostics. Numeric formatting "
+            "does not change metric calculations or ranking. Tab switches tables; "
+            "arrows scroll; ? exposes the full literal cell. Supervised metrics "
+            "describe one holdout, not guaranteed future performance.",
+        ),
+        "metric.accuracy": (
+            "Accuracy",
+            "Fraction of test labels predicted correctly. Larger is better, but "
+            "class imbalance can make accuracy optimistic. Selecting a model on "
+            "this holdout can be optimistic; independent future validation is "
+            "required.",
+        ),
+        "metric.macro_f1": (
+            "Macro F1",
+            "Arithmetic mean of per-class F1 over all known classes; zero "
+            "division contributes zero. Ranking uses descending Macro F1, then "
+            "Accuracy, then stable model ID. Selecting on one holdout can be "
+            "optimistic; independent future validation is required.",
+        ),
+        "metric.mae": (
+            "MAE",
+            "Mean absolute error, in target units; smaller is better. Ranking "
+            "uses lowest MAE then stable model ID. Model selection on one holdout "
+            "can be optimistic; independent future validation is required.",
+        ),
+        "metric.r2": (
+            "R²",
+            "Relative squared-error score on the test target. Negative values are "
+            "valid and indicate worse squared error than predicting the test "
+            "mean. Constant or single-row test targets have undefined R², shown "
+            "as N/A with a reason. Ranking uses MAE. Independent future "
+            "validation is required.",
+        ),
+        "metric.silhouette": (
+            "Silhouette",
+            "Describes cluster separation in standardized space, not predictive "
+            "accuracy. Requires at least two groups and fewer groups than sampled "
+            "rows. Above 2,000 rows it uses a deterministic seed-42 sample of "
+            "2,000. N/A is never replaced by zero. Cluster IDs are arbitrary.",
+        ),
+        "metric.clusters": (
+            "Groups",
+            "Number of actual nonempty clusters. Group identifiers are arbitrary "
+            "and have no semantic labels. Sizes and standardized-space centers "
+            "are available in inspection. No model recommendation is made.",
+        ),
+        "metric.retained_variance": (
+            "Retained variance",
+            "Sum of the retained components' explained variance ratios in "
+            "standardized feature space. This describes compression of this "
+            "dataset, not predictive performance. Inspection shows each component "
+            "and reconstruction MSE.",
+        ),
+        "metric.components": (
+            "Components",
+            "Number of retained PCA dimensions. The summary also shows the "
+            "original selected feature count. Components are descriptive "
+            "projections, not predictions of a target.",
+        ),
+    }
+)

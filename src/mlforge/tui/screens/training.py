@@ -9,6 +9,7 @@ from textual.widgets import Button, DataTable, Static
 from mlforge.application.state import Activity
 from mlforge.contracts import CandidateStatus, DomainError
 from mlforge.datasets.records import visible_text
+from mlforge.tui.screens.results import Results
 from mlforge.tui.screens.shell import Action, Frame
 
 
@@ -76,6 +77,9 @@ class Training(Frame):
         self.update_progress()
         if self.back_when_stopped:
             self.app.pop_screen()
+            return
+        if self.app.service.ranked_results:
+            self.app.switch_screen(Results())
             return
         self.query_one("#cancel").display = False
         self.query_one("#back").display = True

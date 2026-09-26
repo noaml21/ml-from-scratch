@@ -170,3 +170,7 @@ TextArea > .text-area--selection { background: $selected; color: $text; }
 Features #choices { max-height: 8; }
 
 Training #candidates { height: auto; max-height: 8; }
+
+Results #results { height: auto; max-height: 8; }
+Inspection DataTable { height: auto; max-height: 8; margin-bottom: 1; }
+SelectedModel #model-name { text-style: bold; margin-bottom: 1; }

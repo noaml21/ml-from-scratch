@@ -256,7 +256,12 @@ async def test_invalid_preparation_has_action_and_unlocks_configuration(tmp_path
         app.choose_features(("c0",))
         app.choose_task(TaskKind.REDUCTION)
         app.choose_features(("c0",))
-        app.choose_option(1)
+        previous = app.snapshot
+        with pytest.raises(DomainError, match="No valid task option") as error:
+            app.choose_option(1)
+        assert error.value.code == "OPTION" and error.value.action
+        assert app.snapshot is previous and app.snapshot.activity == Activity.IDLE
+        # The worker still independently rejects an invalid feature selection.
         assert not await app.train()
         assert app.snapshot.failure.code == "FEATURE"
         assert (

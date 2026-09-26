@@ -12,6 +12,7 @@ from textual.widgets.option_list import Option
 from mlforge.contracts import DomainError, TaskKind
 from mlforge.datasets.records import visible_text
 from mlforge.tui.help import CATALOG
+from mlforge.tui.screens.results import Results
 from mlforge.tui.screens.shell import Action, Busy, Frame, operation_message
 from mlforge.tui.screens.training import Training
 
@@ -413,6 +414,7 @@ class Models(ConfigurationFrame):
 
     def actions(self):
         yield Action("Train", id="train", variant="primary")
+        yield Action("Review results", id="review-results")
         if self.app.service.model_option_bounds is not None:
             yield Action("Apply option", id="apply")
         yield Action("Back", id="back")
@@ -429,7 +431,16 @@ class Models(ConfigurationFrame):
             )
         return super().check_action(action, parameters)
 
+    def on_screen_resume(self):
+        self.call_after_refresh(self.refresh_results_action)
+
+    def refresh_results_action(self):
+        self.query_one("#review-results").display = bool(
+            self.app.service.ranked_results
+        )
+
     def refresh_choices(self):
+        self.refresh_results_action()
         state = self.app.service.snapshot
         selected = state.configuration.model_ids
         listing = self.query_one("#choices", OptionList)
@@ -514,6 +525,9 @@ class Models(ConfigurationFrame):
     def on_button_pressed(self, event: Button.Pressed):
         if event.button.id == "train":
             self.start_training()
+        elif event.button.id == "review-results":
+            if self.app.service.ranked_results:
+                self.app.push_screen(Results())
         elif event.button.id == "apply":
             self.apply_option()
         else:

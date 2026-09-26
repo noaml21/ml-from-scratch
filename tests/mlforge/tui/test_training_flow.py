@@ -22,6 +22,7 @@ from mlforge.execution.protocol import (
 )
 from mlforge.tui.app import MLForgeApp
 from mlforge.tui.screens.configuration import Models
+from mlforge.tui.screens.results import Results, SelectedModel
 from mlforge.tui.screens.shell import Confirm, Help, ResizeGuard
 from mlforge.tui.screens.training import Training
 
@@ -107,15 +108,15 @@ async def test_actual_training_accepts_all_selected_models(task):
             c.status == CandidateStatus.COMPLETED for c in app.service.snapshot.results
         )
         assert not app.service.snapshot.run.cancelled
-        assert "Training complete" in str(owner.query_one("#progress", Static).content)
-        table = owner.query_one("#candidates", DataTable)
+        assert isinstance(app.screen, Results)
+        table = app.screen.query_one("#results", DataTable)
         assert all(
-            table.get_cell(c.model_id, "status") == "Completed"
+            str(table.get_cell(c.model_id, "status")) == "Completed"
             for c in app.service.snapshot.results
         )
         table.focus()
         await pilot.press("question_mark")
-        assert isinstance(app.screen, Help) and "accepted" in app.screen.body_text
+        assert isinstance(app.screen, Help) and "evaluated" in app.screen.body_text
         await pilot.press("escape")
         assert app.focused is table
         await pilot.press("escape")
@@ -149,11 +150,48 @@ async def test_candidate_failures_are_isolated_and_visible(
             c.status == CandidateStatus.COMPLETED for c in app.service.snapshot.results
         )
         assert completed == modes.count(None)
-        table = owner.query_one("#candidates", DataTable)
+        table = (
+            app.screen.query_one("#results", DataTable)
+            if completed
+            else owner.query_one("#candidates", DataTable)
+        )
         for candidate in app.service.snapshot.results:
             if candidate.status == CandidateStatus.FAILED:
-                assert table.get_cell(candidate.model_id, "status") == "Failed"
-                assert str(table.get_cell(candidate.model_id, "reason"))
+                assert str(table.get_cell(candidate.model_id, "status")) == "Failed"
+                if not completed:
+                    assert str(table.get_cell(candidate.model_id, "reason"))
+                else:
+                    assert candidate.error_message or candidate.error_code
+        if completed:
+            assert "Failed —" in str(
+                app.screen.query_one("#failure-summary", Static).content
+            )
+            assert "Only completed model" in str(
+                app.screen.query_one("#recommendation", Static).content
+            )
+            failed_row = next(
+                i
+                for i, model_id in enumerate(app.screen.shown)
+                if any(
+                    c.model_id == model_id and c.status == CandidateStatus.FAILED
+                    for c in app.service.snapshot.results
+                )
+            )
+            table.move_cursor(row=failed_row, column=1)
+            table.focus()
+            await pilot.press("enter")
+            assert isinstance(app.screen, Results)
+            assert app.service.snapshot.selected is None
+            assert "current model" in str(
+                app.screen.query_one("#error", Static).content
+            )
+            await pilot.press("question_mark")
+            assert isinstance(app.screen, Help) and app.screen.body_text
+            await pilot.press("escape")
+            table.move_cursor(row=0)
+            await pilot.press("enter")
+            assert isinstance(app.screen, SelectedModel)
+            await pilot.press("escape")
         if not completed:
             assert "No model completed" in str(
                 owner.query_one("#progress", Static).content
@@ -170,6 +208,13 @@ async def test_candidate_failures_are_isolated_and_visible(
             app.save_screenshot(
                 f"failure-{modes[0]}-{modes[1]}-{width}.svg", path=str(destination)
             )
+        if not completed:
+            table.focus()
+            await pilot.press("question_mark")
+            assert isinstance(app.screen, Help) and app.screen.body_text
+            await pilot.press("escape")
+            await pilot.press("ctrl+q")
+            await until(lambda: app.service.snapshot.activity == Activity.CLOSED)
     for pid in pids:
         with pytest.raises(ProcessLookupError):
             os.kill(pid, 0)
@@ -297,11 +342,26 @@ async def test_real_cancel_timer_overlays_and_cleanup(
             count = 1 if route == "cancel-second" else 0
             assert len(app.service.snapshot.results) == count
             assert f"Cancelled — {count} models completed." in str(
-                owner.query_one("#progress", Static).content
+                app.screen.query_one("#run-context", Static).content
+                if count
+                else owner.query_one("#progress", Static).content
             )
             assert app.service.snapshot.activity == Activity.IDLE
             if count:
-                app.service.select_candidate(app.service.snapshot.results[0].model_id)
+                assert isinstance(app.screen, Results)
+                assert "Cancelled" in str(
+                    app.screen.query_one("#run-context", Static).content
+                )
+                await pilot.press("enter")
+                assert isinstance(app.screen, SelectedModel)
+                selected = app.service.snapshot.results[0]
+                assert app.service.snapshot.selected is selected
+                await pilot.press("escape", "escape")
+                assert isinstance(app.screen, Models)
+                app.screen.query_one("#review-results").focus()
+                await pilot.press("enter")
+                assert isinstance(app.screen, Results)
+                assert app.service.snapshot.selected is selected
             app.save_screenshot(
                 f"{capture_name}-cancelled-80.svg", path=str(destination)
             )

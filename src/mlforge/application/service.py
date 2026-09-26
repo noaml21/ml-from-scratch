@@ -39,7 +39,7 @@ from mlforge.datasets.records import (
     schema_data,
     schema_from_data,
 )
-from mlforge.evaluation import ranked_candidates, recommendation
+from mlforge.evaluation import PRIMARY_METRICS, ranked_candidates, recommendation
 from mlforge.execution.coordinator import Coordinator, _settle
 from mlforge.execution.protocol import (
     MAX_FILE,
@@ -522,6 +522,12 @@ class Service:
         ):
             _error("OPTION", "Choose an integer task option.", "Return to Models.")
         bounds = self.model_option_bounds
+        if option is not None and bounds is not None and bounds[1] < bounds[0]:
+            _error(
+                "OPTION",
+                "No valid task option for the current rows and features.",
+                "Choose more rows or eligible features before setting this option.",
+            )
         if (
             option is not None
             and bounds is not None
@@ -810,14 +816,27 @@ class Service:
         self._state = replace(self._state, error_code=failure.code, failure=failure)
 
     @property
+    def primary_metrics(self):
+        run = self._state.run
+        return PRIMARY_METRICS[run.experiment.task] if run else ()
+
+    @property
     def ranked_results(self):
         run = self._state.run
-        return ranked_candidates(run.experiment.task, run.candidates) if run else ()
+        return (
+            ranked_candidates(run.experiment.task, run.candidates)
+            if run and run.revisions == self._state.revisions
+            else ()
+        )
 
     @property
     def recommended(self):
         run = self._state.run
-        return recommendation(run.experiment.task, run.candidates) if run else None
+        return (
+            recommendation(run.experiment.task, run.candidates)
+            if run and run.revisions == self._state.revisions
+            else None
+        )
 
     async def train(self, *, discard=False):
         self._open_command(discard)
@@ -1169,11 +1188,13 @@ class Service:
         if self._state.activity == Activity.RUNNING:
             self._state = replace(self._state, activity=Activity.CANCELLING)
 
-    def select_candidate(self, model_id):
+    def select_candidate(self, model_id, *, run_id=None):
         self._editable(discard=True)
         run = self._state.run
         if (
             run is None
+            or run.revisions != self._state.revisions
+            or (run_id is not None and run_id != run.id)
             or run.status not in (RunStatus.COMPLETED, RunStatus.PARTIAL)
             or model_id
             not in {
