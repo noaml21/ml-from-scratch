@@ -2,6 +2,7 @@
 
 import asyncio
 import base64
+import codecs
 import errno
 import fcntl
 import hashlib
@@ -16,6 +17,7 @@ import subprocess
 import sys
 import termios
 import time
+import unicodedata
 from importlib.resources import files
 from pathlib import Path
 
@@ -274,6 +276,70 @@ async def training_pilot_journey(evidence):
     }
 
 
+class TerminalScreen:
+    """Current cell contents of Textual's alternate screen, not its redraw history.
+
+    Textual emits cursor positioning, SGR styling, CR/LF and text with autowrap
+    disabled, so a small grid model reproduces what is visible now. A stale frame
+    (such as footer text repainted underneath Help) cannot satisfy a wait once a
+    later frame has overwritten it.
+    """
+
+    SEQUENCE = re.compile(
+        r"\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07\x1b]*(?:\x07|\x1b\\)|[^\[\]])"
+    )
+    INCOMPLETE = re.compile(r"\x1b(?:\[[0-?]*[ -/]*|\][^\x07\x1b]*\x1b?)?\Z")
+
+    def __init__(self, rows, columns):
+        self.rows, self.columns = rows, columns
+        self.grid = [[" "] * columns for _ in range(rows)]
+        self.row = self.column = 0
+        self.decoder = codecs.getincrementaldecoder("utf-8")("replace")
+        self.pending = ""
+
+    def resize(self, rows, columns):
+        self.grid = [
+            (line + [" "] * columns)[:columns] for line in self.grid[:rows]
+        ] + [[" "] * columns for _ in range(rows - len(self.grid))]
+        self.rows, self.columns = rows, columns
+        self.row, self.column = min(self.row, rows - 1), min(self.column, columns - 1)
+
+    def feed(self, data):
+        text = self.pending + self.decoder.decode(data)
+        incomplete = self.INCOMPLETE.search(text)
+        cut = incomplete.start() if incomplete else len(text)
+        text, self.pending = text[:cut], text[cut:]
+        position = 0
+        for match in self.SEQUENCE.finditer(text):
+            self._write(text[position : match.start()])
+            self._control(match.group())
+            position = match.end()
+        self._write(text[position:])
+
+    def _control(self, sequence):
+        if sequence.endswith("H") and sequence.startswith("\x1b["):
+            row, _, column = sequence[2:-1].partition(";")
+            self.row = min(max(int(row or 1), 1), self.rows) - 1
+            self.column = min(max(int(column or 1), 1), self.columns) - 1
+
+    def _write(self, text):
+        for char in text:
+            if char == "\r":
+                self.column = 0
+            elif char == "\n":
+                self.row = min(self.row + 1, self.rows - 1)
+            elif char >= " ":
+                width = 2 if unicodedata.east_asian_width(char) in "WF" else 1
+                if self.column + width <= self.columns:
+                    self.grid[self.row][self.column] = char
+                    if width == 2:
+                        self.grid[self.row][self.column + 1] = ""
+                self.column = min(self.column + width, self.columns - 1)
+
+    def text(self):
+        return "\n".join("".join(line) for line in self.grid)
+
+
 def pty_journey(evidence, exit_key, task=None):
     master, slave = pty.openpty()
     fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
@@ -289,6 +355,20 @@ def pty_journey(evidence, exit_key, task=None):
     )
     os.close(slave)
     output = bytearray()
+    screen = TerminalScreen(24, 80)
+
+    def pump(deadline, missing):
+        assert time.monotonic() < deadline, f"PTY missing {missing!r}"
+        if select.select([master], [], [], 0.1)[0]:
+            try:
+                chunk = os.read(master, 65536)
+            except OSError as error:
+                if error.errno == errno.EIO:
+                    raise AssertionError("Premature PTY exit") from None
+                raise
+            assert chunk
+            output.extend(chunk)
+            screen.feed(chunk)
 
     def read_until(fragment, start=0):
         deadline = time.monotonic() + 30
@@ -300,16 +380,25 @@ def pty_journey(evidence, exit_key, task=None):
                 observed = re.sub(rb"\x1b\[[0-?]*[ -/]*[@-~]", b"", observed)
             if fragment in observed:
                 return
-            assert time.monotonic() < deadline, f"PTY missing {fragment!r}"
-            if select.select([master], [], [], 0.1)[0]:
-                try:
-                    chunk = os.read(master, 65536)
-                except OSError as error:
-                    if error.errno == errno.EIO:
-                        raise AssertionError("Premature PTY exit") from None
-                    raise
-                assert chunk
-                output.extend(chunk)
+            pump(deadline, fragment)
+
+    def await_screen(present, absent=()):
+        # State transitions (modal dismissal, resize restoration) are judged on
+        # the currently visible cells: earlier frames repaint the same footer.
+        deadline = time.monotonic() + 30
+        while True:
+            visible = screen.text()
+            if all(text in visible for text in present) and not any(
+                text in visible for text in absent
+            ):
+                return
+            pump(deadline, (present, absent))
+
+    def resize(rows, columns):
+        size = struct.pack("HHHH", rows, columns, 0, 0)
+        fcntl.ioctl(master, termios.TIOCSWINSZ, size)
+        screen.resize(rows, columns)
+        proc.send_signal(signal.SIGWINCH)
 
     def send(keys, expected):
         start = len(output)
@@ -349,15 +438,15 @@ def pty_journey(evidence, exit_key, task=None):
             read_until(b"Review results")
             send(b"?", b"> Close")
             assert b"evaluated model" in output
-            send(b"\r", b"? Help  b Back")
-            start = len(output)
-            fcntl.ioctl(master, termios.TIOCSWINSZ, struct.pack("HHHH", 23, 79, 0, 0))
-            proc.send_signal(signal.SIGWINCH)
-            read_until(b"Resize to at least", start)
-            start = len(output)
-            fcntl.ioctl(master, termios.TIOCSWINSZ, struct.pack("HHHH", 30, 100, 0, 0))
-            proc.send_signal(signal.SIGWINCH)
-            read_until(b"? Help  b Back", start)
+            results = ("Review results", "? Help  b Back")
+            # Enter must be applied to Help before resizing; a key still queued
+            # when ResizeGuard is pushed is delivered to the guard instead.
+            os.write(master, b"\r")
+            await_screen(results, absent=("Close",))
+            resize(23, 79)
+            await_screen(("Resize to at least",))
+            resize(30, 100)
+            await_screen(results, absent=("Close", "Resize to at least"))
             send(b"\r", b"Selected model")
             send(b"\r", b"Inspect model details")
             send(b"\x1b", b"Selected model")
