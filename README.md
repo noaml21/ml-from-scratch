@@ -39,8 +39,8 @@ python scripts/verify_package.py --prepare-wheelhouse
 python scripts/verify_package.py
 ```
 
-The package verifier checks app packaging and the installed dataset journey through
-Pilot and real PTYs, with network attempts blocked in parent and worker processes.
+The package verifier checks app packaging, dataset review and all four training/inspection
+journeys through Pilot and real PTYs, with network attempts blocked in parent and worker processes.
 The ordinary test suite also includes
 six real exported-model consumer installations and requires the prepared local
 wheelhouse; missing prerequisites fail explicitly. The full TUI journey is not yet release verified. Run `mlforge` for the current shell.

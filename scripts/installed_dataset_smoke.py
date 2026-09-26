@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import pty
+import re
 import select
 import signal
 import struct
@@ -291,7 +292,14 @@ def pty_journey(evidence, exit_key, task=None):
 
     def read_until(fragment, start=0):
         deadline = time.monotonic() + 30
-        while fragment not in output[start:]:
+        while True:
+            observed = bytes(output[start:])
+            if not fragment.startswith(b"\x1b"):
+                # Textual styles individual footer spans. Text waits ignore ANSI;
+                # protocol waits (alternate screen / OSC52) retain exact bytes.
+                observed = re.sub(rb"\x1b\[[0-?]*[ -/]*[@-~]", b"", observed)
+            if fragment in observed:
+                return
             assert time.monotonic() < deadline, f"PTY missing {fragment!r}"
             if select.select([master], [], [], 0.1)[0]:
                 try:
@@ -339,8 +347,9 @@ def pty_journey(evidence, exit_key, task=None):
             send(b"\r", b"Choose models to train")
             send((b"\t" if task.supervised else b"\t\t") + b"\r", b"Training models")
             read_until(b"Review results")
-            send(b"?", b"evaluated model")
-            send(b"\x1b", b"Review results")
+            send(b"?", b"> Close")
+            assert b"evaluated model" in output
+            send(b"\r", b"? Help  b Back")
             start = len(output)
             fcntl.ioctl(master, termios.TIOCSWINSZ, struct.pack("HHHH", 23, 79, 0, 0))
             proc.send_signal(signal.SIGWINCH)
@@ -348,7 +357,7 @@ def pty_journey(evidence, exit_key, task=None):
             start = len(output)
             fcntl.ioctl(master, termios.TIOCSWINSZ, struct.pack("HHHH", 30, 100, 0, 0))
             proc.send_signal(signal.SIGWINCH)
-            read_until(b"Review results", start)
+            read_until(b"? Help  b Back", start)
             send(b"\r", b"Selected model")
             send(b"\r", b"Inspect model details")
             send(b"\x1b", b"Selected model")
