@@ -326,10 +326,14 @@ async def test_real_cancel_timer_overlays_and_cleanup(
             else:
                 await pilot.press("enter")
             assert app.service.snapshot.activity == Activity.CANCELLING
-            await pilot.pause()
-            assert "Stopping training" in str(
-                owner.query_one("#progress", Static).content
+            # A message-queue pause does not advance the 100ms presentation timer.
+            await until(
+                lambda: (
+                    "Stopping training"
+                    in str(owner.query_one("#progress", Static).content)
+                )
             )
+            assert app.service.snapshot.activity == Activity.CANCELLING
             app.save_screenshot(
                 f"{capture_name}-stopping-80.svg", path=str(destination)
             )

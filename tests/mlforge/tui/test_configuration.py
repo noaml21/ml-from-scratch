@@ -27,7 +27,10 @@ async def until(predicate):
 
 
 async def activate(app, pilot, button):
-    app.screen.query_one(f"#{button}").focus()
+    control = app.screen.query_one(f"#{button}")
+    # Textual ignores keyboard presses while its previous active effect runs.
+    await until(lambda: not control.has_class("-active"))
+    control.focus()
     await pilot.press("enter")
 
 
@@ -333,6 +336,8 @@ async def test_models_state_options_help_and_visuals(task, monochrome, monkeypat
             config = app.service.snapshot.configuration
             assert config.option == bounds[2]
             field = owner.query_one("#option", Input)
+            # Keep repeated Train presses inside a visible debounce window.
+            owner.query_one("#train").active_effect_duration = 1.0
             field.focus()
             for value in ["", "3.5", str(bounds[0] - 1), str(bounds[1] + 1), "bq?"]:
                 field.value = value
