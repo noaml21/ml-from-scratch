@@ -1,6 +1,7 @@
 """Full-table interpretation, safe atomic correction and immutable raw cells."""
 
 import json
+import math
 
 import pytest
 
@@ -174,3 +175,61 @@ def test_equivalent_semantic_views_across_formats(tmp_path):
             ]
         )
     assert views[0] == views[1] == views[2]
+
+
+def _decimal_reference(text):
+    """The original exact interpretation, kept here as the parity oracle."""
+    from decimal import Decimal
+
+    decimal = Decimal(text.strip())
+    value = float(decimal)
+    if not math.isfinite(value):
+        return "NUMBER_RANGE"
+    if decimal == decimal.to_integral_value() and abs(decimal) > 2**53 - 1:
+        return "PRECISION"
+    return value
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "0",
+        "-0",
+        "+0.0",
+        ".5",
+        "5.",
+        " 7 ",
+        "1e5",
+        "1E-7",
+        "-2.5e+3",
+        "0.1",
+        "123456.789",
+        "4503599627370495",
+        "4503599627370496",
+        "9007199254740991",
+        "9007199254740992",
+        "9007199254740993",
+        "-9007199254740993",
+        "9007199254740993.0",
+        "9007199254740993.5",
+        "1e16",
+        "1.5e16",
+        "1e308",
+        "1.7976931348623157e308",
+        "1.7976931348623159e308",
+        "1e309",
+        "-1e400",
+        "1e-400",
+        "0.30000000000000004",
+        "123456789012345678901234567890e-20",
+    ],
+)
+def test_number_fast_path_matches_exact_decimal_interpretation(text):
+    expected = _decimal_reference(text)
+    try:
+        actual = interpreted(Cell(text), T.NUMBER)
+    except ValueError as error:
+        actual = str(error)
+    assert actual == expected and type(actual) is type(expected)
+    if type(expected) is float:
+        assert math.copysign(1, actual) == math.copysign(1, expected)

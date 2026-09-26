@@ -27,10 +27,18 @@ def interpreted(cell: Cell, kind: ColumnType):
     if kind in {ColumnType.CATEGORY, ColumnType.IDENTIFIER}:
         return text
     if kind == ColumnType.NUMBER:
-        if cell.source_kind == SourceKind.BOOLEAN or not NUMBER.fullmatch(text.strip()):
+        text = text.strip()
+        if cell.source_kind == SourceKind.BOOLEAN or not NUMBER.fullmatch(text):
             raise ValueError("NUMBER_REQUIRED")
+        # float(text) and float(Decimal(text)) are the same correctly rounded
+        # value; only magnitudes from 2**52 can need the exact precision check.
+        value = float(text)
+        if not math.isfinite(value):
+            raise ValueError("NUMBER_RANGE")
+        if abs(value) < 2**52:
+            return value
         try:
-            decimal = Decimal(text.strip())
+            decimal = Decimal(text)
             value = float(decimal)
             if not math.isfinite(value):
                 raise ValueError("NUMBER_RANGE")
@@ -46,19 +54,17 @@ def interpreted(cell: Cell, kind: ColumnType):
     raise ValueError("TYPE_REQUIRED")
 
 
-def _all(cells: tuple[Cell, ...], kind: ColumnType) -> bool:
+def _all(cells: tuple[Cell, ...], kind: ColumnType) -> list | None:
+    """Every interpretation, or None as soon as one value does not fit."""
     try:
-        for cell in cells:
-            interpreted(cell, kind)
+        return [interpreted(cell, kind) for cell in cells]
     except ValueError:
-        return False
-    return True
+        return None
 
 
-def detect(name: str, cells: tuple[Cell, ...]) -> ColumnType:
-    present = tuple(cell for cell in cells if not cell.missing)
+def _detect(name: str, present: tuple[Cell, ...]) -> tuple[ColumnType, list | None]:
     if not present:
-        return ColumnType.UNKNOWN
+        return ColumnType.UNKNOWN, None
     raw_unique = len({cell.raw_text for cell in present})
     lowered = name.lower()
     if (
@@ -66,17 +72,22 @@ def detect(name: str, cells: tuple[Cell, ...]) -> ColumnType:
         and len(present) >= 10
         and raw_unique / len(present) >= 0.9
     ):
-        return ColumnType.IDENTIFIER
+        return ColumnType.IDENTIFIER, None
     for kind in (ColumnType.BOOLEAN, ColumnType.DATE, ColumnType.NUMBER):
-        if _all(present, kind):
+        values = _all(present, kind)
+        if values is not None:
             if kind == ColumnType.NUMBER and any(
                 cell.source_kind == SourceKind.TEXT
                 and LEADING_ZERO.fullmatch(cell.raw_text.strip())
                 for cell in present
             ):
-                return ColumnType.CATEGORY
-            return kind
-    return ColumnType.CATEGORY
+                return ColumnType.CATEGORY, None
+            return kind, values
+    return ColumnType.CATEGORY, None
+
+
+def detect(name: str, cells: tuple[Cell, ...]) -> ColumnType:
+    return _detect(name, tuple(cell for cell in cells if not cell.missing))[0]
 
 
 def profile(
@@ -86,9 +97,15 @@ def profile(
     effective: ColumnType,
     *,
     overridden: bool = False,
+    interpretations: list | None = None,
 ) -> ColumnProfile:
+    """Profile cells; interpretations may carry detect's values for `effective`."""
     present = tuple(cell for cell in cells if not cell.missing)
-    values = {interpreted(cell, effective) for cell in present}
+    values = set(
+        interpretations
+        if interpretations is not None
+        else (interpreted(cell, effective) for cell in present)
+    )
     warnings = []
     if (
         len({cell.source_kind for cell in present}) > 1
@@ -96,13 +113,15 @@ def profile(
         and not overridden
     ):
         warnings.append("MIXED_KINDS")
-    if any(
+    # Detection never yields Number when a text value has leading zeros.
+    if detected != ColumnType.NUMBER and any(
         cell.source_kind == SourceKind.TEXT
         and LEADING_ZERO.fullmatch(cell.raw_text.strip())
         for cell in present
     ):
         warnings.append("LEADING_ZEROS")
-    for cell in present:
+    # Every value of an effective Number column already interpreted exactly.
+    for cell in present if effective != ColumnType.NUMBER else ():
         try:
             interpreted(cell, ColumnType.NUMBER)
         except ValueError as error:
@@ -132,6 +151,9 @@ def infer_schema(dataset: TabularDataset) -> Schema:
     profiles = []
     for index, column in enumerate(dataset.columns):
         cells = tuple(row[index] for row in dataset.rows)
-        detected = detect(column.name, cells)
-        profiles.append(profile(column.id, cells, detected, detected))
+        present = tuple(cell for cell in cells if not cell.missing)
+        detected, values = _detect(column.name, present)
+        profiles.append(
+            profile(column.id, cells, detected, detected, interpretations=values)
+        )
     return Schema(tuple(profiles))
