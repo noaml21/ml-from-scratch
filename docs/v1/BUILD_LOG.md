@@ -664,3 +664,48 @@ Commit 545d7e9410054967ba6e0dadc3346c6e7179a414 `feat(export): verify installed 
 - Gate tools (offline isolated build from wheelhouse, twine both PASSED, pip check, three educational demos, git diff --check): ALL_GATE_TOOLS_PASSED, .mlforge-build/p08-gate-tools.log.
 - Exact-SHA CI https://github.com/noaml21/ml-from-scratch/actions/runs/36266241401 (consumer_installs=true) **SUCCESS**: verify (3.12) 678 passed/1683.36s, verify (3.13) 678 passed/1248.08s, including six-model export/test_install consumers, package verifier with TUI-export consumer parity, build/twine/demos/lint/planning. This is the P08 full-suite evidence. A concurrent local full pytest was stopped by the agent after an unrelated semantics-preserving inference edit began affecting its later worker children; it is not evidence.
 Acceptance contribution: A18 (Try for all tasks, typed/missing/unknown, no target/retrain), A19 (UI export, no refit/overwrite, safe names), A20 (installed parity for TUI exports + six-model matrix), A21 (no raw rows/paths in wheel checks), A23 (export retry keeps bundle).
+
+## P09 — Integration, polish and adversarial verification: IN PROGRESS (from a740a1e)
+### P09.1 Full E2E and recovery rehearsal — VERIFIED
+- Installed E2E: all four goals keyboard-only through configure → train → Results → Select → Inspect → Try → Export → fresh consumer parity, in wheel and sdist-derived applications (P08.3 verifier); CSV (classification, clustering), TSV (regression) and JSONL (reduction) formats all reach an installed exported wheel. Six-model exporter→consumer matrix remains export/test_install.py.
+- Recovery rehearsal (A27): `python scripts/rehearse_recovery.py` (commit 840e52c) on a disposable local clone → .mlforge-build/recovery-p09.json. Stale BUILD_STATE pointer detected against the newer commit subject; staged src/mlforge/tui/screens/trial.py, unstaged BUILD_LOG/BUILD_STATE and untracked test file preserved byte-for-byte (SHA-256 before/after); a log without `EXIT n` classified UNKNOWN (never PASS) and a `EXIT 0` log PASS; one commit ahead of the recorded pointer detected with the decision to reconstruct evidence rather than rebuild; planning ancestry intact; next unit reconstructed from IMPLEMENTATION_PLAN as P09.1. Only read-only Git commands were used on the fixture. This session's own takeover (stale "CI pending" pointer vs actual CI success; Codex→Claude handoff) followed the same protocol on the real checkout.
+### P09.2 Keyboard/visual/resize polish — VERIFIED
+- A28 transitions 100x30 → 80x24 → 79x23 → 100x30 on Try (all tasks: typed input, result and Predict focus preserved; guard shown only below minimum) and on Export during a real build (no cancel/duplicate; form preserved): tui/test_try.py + test_export_flow.py 6 passed.
+- Defect found by full-flow capture review and fixed in f4c4f27: the export success install command soft-wrapped a long absolute path into a blank line at 80 columns; it now uses the short path relative to the named working folder when possible (Created keeps the full path). Installed Try/Export captures now carry their real width (earlier "-80" names were taken at 100x30).
+- Earlier-phase screens retain their P06/P07 checklist evidence; no new severe defects found in installed Results/Inspection/Try/Export captures.
+### P09.3 Release verifier, peak guard and docs — local VERIFIED, gate running
+- Peak-input guard (scripts/measure_peak_input.py, 37b3034) found a real defect: a legal 20,000×100 CSV timed out at the 30 s parse deadline (profiled inference 48 s; each Number cell parsed through Decimal three times). Fix 37b3034: correctly-rounded float fast path with the exact Decimal precision check only for |x| ≥ 2**52, reuse detection values, skip scans that cannot change Number results. Evidence: 29-case Decimal oracle test; old vs new infer_schema identical on 7 tables (peak, edge, five examples); datasets/pipeline/worker/application/TUI preview subsystem 264 passed/141.24s. Guard after fix (CPython 3.12.3, 12 CPUs, under concurrent load): load 30.55 s wall (worker child 20.5 s of its 30 s deadline, remainder parent decode in a thread), train both models 83.46 s, predict 1,000 records 3.83 s, export 7.7 s, peak child RSS 779.4 MiB; .mlforge-build/performance-3.12.json.
+- scripts/verify_release.py (a2092c0): `python scripts/verify_release.py` → EXIT 0, .mlforge-build/p09-release.log and release-3.12.json (commit f4c4f27 + then-uncommitted verifier/README): application installs and installed journeys 655.6 s, six model consumer installations 104.4 s; wheel and sdist apps each with four TUI-export consumers; six model consumers. CI now runs verify_release.py when consumer installs are enabled.
+- README: supported environments, input limits, privacy, limitations with measured peak timings, troubleshooting (a2092c0).
+
+### Acceptance evidence matrix (P09 snapshot; final statuses belong in V1_BUILD_REPORT)
+| ID | Evidence |
+|---|---|
+| A01 | v1/mlforge only; planning ancestry (rehearsal merge-base check); per-phase BUILD_LOG; main untouched |
+| A02 | tests/test_{kmeans,logistic_regression,pca}.py in every full suite; three comparisons in gate tools and CI |
+| A03 | verify_package/verify_release wheel + sdist installs, pip check, --help/--version, installed TUI; CI 3.12 and 3.13 |
+| A04 | inherited .pth network guard logs (parent, workers, consumers) with denied controls; source_unchanged in installed journeys; importer immutability tests |
+| A05 | tui/test_sources, test_shell, installed dataset Pilot/PTY (paths with spaces/Unicode in test_sources) |
+| A06 | datasets/test_importers matrix |
+| A07 | datasets/test_inference, tui/test_preview, test_schema_review |
+| A08 | datasets/test_prepare, tui/test_prepare_flow, installed PTY explicit OSC52 |
+| A09 | tui/test_configuration, test_results four-goal journeys, installed training Pilot (no unsupervised Target) |
+| A10 | pipeline/test_eligibility, tui/test_configuration |
+| A11 | pipeline/test_eligibility, application/test_configuration_review, tui/test_configuration |
+| A12 | pipeline/test_split no-leakage sentinels, test_fitting |
+| A13 | pipeline/test_fitting, test_bundles, test_metrics |
+| A14 | execution/test_lifecycle, tui/test_training_flow real-child timer/help |
+| A15 | execution/test_lifecycle, test_parent_cleanup, test_serial, tui/test_training_flow |
+| A16 | pipeline/test_metrics, tui/test_results |
+| A17 | tui/test_results inspection, installed training Pilot |
+| A18 | application/test_try_inputs, tui/test_try, installed Try |
+| A19 | export/test_wheel, test_security, execution/test_publication, test_export_lifecycle, tui/test_export_flow |
+| A20 | export/test_install (six models), verify_package TUI-export consumer parity (4 tasks × 2 apps) |
+| A21 | export/test_security, test_probes, test_export_flow wheel content scan |
+| A22 | tui Pilot suites at 80x24/100x30, installed PTYs, A28 transitions |
+| A23 | tui/test_results partial/failed, application/test_state invalidation, test_export_flow retry |
+| A24 | full suite + lint + build + twine + comparisons + verify_release; CI run for the P09 candidate |
+| A25 | P10 documentation consistency review (pending by plan) |
+| A26 | P10 report and SHA protocol (pending by plan) |
+| A27 | P01 rehearsal (recovery-p01.json) + P09 rehearsal (recovery-p09.json) |
+| A28 | per-phase checklist entries; color and monochrome captures (.mlforge-build/p07-*, p08-try, p08-export, installed-*) |
