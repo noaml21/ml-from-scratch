@@ -37,10 +37,12 @@ from mlforge.tui.screens.configuration import (
     Target,
 )
 from mlforge.tui.screens.dataset import Browse, Load, PathEntry
+from mlforge.tui.screens.export import ExportDone, ExportPackage
 from mlforge.tui.screens.prepare import Prepare, SavePrompt
 from mlforge.tui.screens.preview import Preview, TypeReview
 from mlforge.tui.screens.results import Inspection, Results, SelectedModel
-from mlforge.tui.screens.shell import Confirm, Help, ResizeGuard
+from mlforge.tui.screens.shell import Help, ResizeGuard
+from mlforge.tui.screens.trial import Trial
 
 
 async def until(predicate):
@@ -168,6 +170,64 @@ async def pilot_journey(evidence):
     return {"examples": len(examples), "sizes": [80, 100, 140], "status": "passed"}
 
 
+async def settle(screen):
+    """Wait for one completed Try/Export attempt on that screen."""
+    attempts = screen.attempts
+    async with asyncio.timeout(180):
+        while screen.attempts == attempts:
+            await asyncio.sleep(0.05)
+
+
+async def try_and_export(app, pilot, owner, selected, task, evidence):
+    """Try the selected model, then export it; consumer parity runs later."""
+    await pilot.press("enter")
+    assert isinstance(app.screen, SelectedModel)
+    await activate(app, pilot, "try")
+    await until(lambda: isinstance(app.screen, Trial))
+    await pilot.pause()
+    trial = app.screen
+    record = {}
+    for index, field in enumerate(trial.fields):
+        if index == 0:
+            assert field.kind == "Number" and app.focused.id == "value-0"
+            await pilot.press(*"1000")
+            record[field.name] = "1000"
+        else:
+            trial.query_one(f"#missing-{index}").focus()
+            await pilot.press("space")
+            record[field.name] = None
+    await activate(app, pilot, "predict")
+    await settle(trial)
+    await pilot.pause()
+    prediction = app.service.snapshot.prediction
+    assert prediction is not None and app.service.snapshot.selected is selected
+    shown = str(trial.query_one("#warnings", Static).content)
+    assert "outside the fitted data range" in shown and "Missing input" in shown
+    app.save_screenshot(f"{task}-try-80.svg", path=str(evidence))
+    await pilot.press("b")
+    await until(lambda: isinstance(app.screen, SelectedModel))
+    await activate(app, pilot, "export")
+    await until(lambda: isinstance(app.screen, ExportPackage))
+    await pilot.pause()
+    form = app.screen
+    module = f"{task.value}_model"
+    form.query_one("#module", Input).value = module
+    await activate(app, pilot, "build")
+    await settle(form)
+    await pilot.pause()
+    assert isinstance(app.screen, ExportDone), form.query_one("#error", Static).content
+    wheel = Path(app.service.snapshot.exported_path)
+    assert wheel.parent == Path.cwd() / "exports" and wheel.is_file()
+    assert f"from {module} import Predictor" in app.screen.query_one(TextArea).text
+    app.save_screenshot(f"{task}-export-done-80.svg", path=str(evidence))
+    await activate(app, pilot, "results")
+    await until(lambda: app.screen is owner)
+    return {
+        "try": {"records": [record], "expected": prediction.data},
+        "export": {"wheel": str(wheel), "module": module},
+    }
+
+
 async def training_pilot_journey(evidence):
     completed = []
     for task in TaskKind:
@@ -253,9 +313,17 @@ async def training_pilot_journey(evidence):
                 ).hexdigest()
                 for c in ranked
             }
+            trial = await try_and_export(
+                app, pilot, app.screen, selected, task, evidence
+            )
+            assert hashes == {
+                c.model_id: hashlib.sha256(
+                    (Path(c.bundle.directory) / "model.skops").read_bytes()
+                ).hexdigest()
+                for c in ranked
+            }
+            # Exported sessions quit without the unsaved-results confirmation.
             await pilot.press("ctrl+q")
-            assert isinstance(app.screen, Confirm) and app.focused.id == "keep"
-            await pilot.press("tab", "enter")
             await until(lambda: app.service.snapshot.activity == Activity.CLOSED)
             assert not app.service._coordinator.root.exists()
         assert resource.read_bytes() == original
@@ -265,6 +333,7 @@ async def training_pilot_journey(evidence):
                 "models": len(ranked),
                 "exact_bundle_retained": True,
                 "source_unchanged": True,
+                **trial,
             }
         )
     return {

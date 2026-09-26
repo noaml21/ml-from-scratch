@@ -3,6 +3,7 @@
 import asyncio
 import csv
 import hashlib
+import os
 from pathlib import Path
 
 import pytest
@@ -34,6 +35,8 @@ async def activate(app, pilot, identifier):
 
 
 def screenshot(app, name):
+    if os.environ.get("NO_COLOR"):
+        name += "-mono"
     folder = Path(".mlforge-build/p08-try")
     folder.mkdir(parents=True, exist_ok=True)
     app.save_screenshot(name + ".svg", path=str(folder))
@@ -83,7 +86,13 @@ async def predict(app, pilot):
 
 
 @pytest.mark.parametrize("task", list(TaskKind))
-async def test_try_form_errors_missing_warnings_and_exact_runtime(task, tmp_path):
+async def test_try_form_errors_missing_warnings_and_exact_runtime(
+    task, tmp_path, monkeypatch
+):
+    mono = task == TaskKind.REGRESSION  # One task proves markers without color.
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    if mono:
+        monkeypatch.setenv("NO_COLOR", "1")
     app = MLForgeApp(Service())
     async with app.run_test(size=(80, 24)) as pilot:
         await selected_model(app, pilot, tmp_path, task)

@@ -35,6 +35,8 @@ async def activate(app, pilot, identifier):
 
 
 def screenshot(app, name):
+    if os.environ.get("NO_COLOR"):
+        name += "-mono"
     folder = Path(__file__).resolve().parents[3] / ".mlforge-build/p08-export"
     folder.mkdir(parents=True, exist_ok=True)
     app.save_screenshot(name + ".svg", path=str(folder))
@@ -90,6 +92,9 @@ async def build(app, pilot):
 
 @pytest.mark.parametrize("task", [TaskKind.CLASSIFICATION, TaskKind.REDUCTION])
 async def test_export_errors_retry_success_and_usage(task, tmp_path, monkeypatch):
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    if task == TaskKind.REDUCTION:  # One flow proves markers without color.
+        monkeypatch.setenv("NO_COLOR", "1")
     work = tmp_path / "work"
     work.mkdir()
     monkeypatch.chdir(work)

@@ -30,6 +30,27 @@ sys.addaudithook(reject_network)
 """
 
 
+CONSUMER = """
+import importlib
+import importlib.util
+import json
+import sys
+from importlib.metadata import distributions
+from pathlib import Path
+assert sys.modules["mlforge_installed_guard"].ACTIVE
+for name in ("mlforge", "textual", "rich"):
+    assert importlib.util.find_spec(name) is None, name
+installed = {d.metadata["Name"].lower() for d in distributions()}
+assert not {"mlforge", "textual", "rich"} & installed
+package = importlib.import_module(sys.argv[1])
+model = package.Predictor()
+records = json.loads(Path(sys.argv[2]).read_text())
+reduction = model.metadata["task"] == "reduction"
+batch = model.transform_many if reduction else model.predict_many
+Path(sys.argv[3]).write_text(json.dumps(batch(records), allow_nan=False))
+"""
+
+
 def run(command, *, cwd, env=None):
     result = subprocess.run(
         command, cwd=cwd, env=env, capture_output=True, text=True, timeout=600
@@ -205,6 +226,11 @@ def verify(wheelhouse):
             )
             attempts = log.read_text().splitlines()
             assert attempts and all(line.startswith("active ") for line in attempts)
+            training = json.loads((destination / "training-journey.json").read_text())
+            consumers = [
+                consumer_parity(task, root, env, wheelhouse, destination)
+                for task in training["pilot"]["tasks"]
+            ]
             # Real loads/overrides use fresh operation interpreters, each guarded.
             assert len(attempts) >= 12, "Missing child network-guard evidence"
             assert not list(temporary_files.iterdir()), "Installed session leaked files"
@@ -238,9 +264,8 @@ print('5 packaged examples parsed and inferred')
                     "dataset_journey": json.loads(
                         (destination / "journey.json").read_text()
                     ),
-                    "training_journey": json.loads(
-                        (destination / "training-journey.json").read_text()
-                    ),
+                    "training_journey": training,
+                    "exported_consumers": consumers,
                     "network_guard": "active in parent/children; zero attempts",
                     "pip_check": run(
                         [python, "-m", "pip", "check"], cwd=root, env=guarded_env
@@ -255,6 +280,77 @@ print('5 packaged examples parsed and inferred')
     report = WORK / f"package-{sys.version_info.major}.{sys.version_info.minor}.json"
     report.write_text(json.dumps(evidence, indent=2) + "\n")
     print(f"Wheel and sdist-derived isolated installs passed: {report}")
+
+
+def consumer_parity(task, root, env, wheelhouse, destination):
+    """Install one TUI-exported wheel into a fresh guarded consumer; compare Try."""
+    from mlforge.export.wheel import _equal
+
+    wheel = Path(task["export"]["wheel"])
+    consumer = root / f"consumer-{destination.name}-{task['task']}"
+    consumer.mkdir()
+    venv = consumer / "venv"
+    run([sys.executable, "-m", "venv", str(venv)], cwd=consumer)
+    python = str(venv / "bin/python")
+    site = Path(
+        run(
+            [
+                python,
+                "-I",
+                "-c",
+                "import sysconfig; print(sysconfig.get_path('purelib'))",
+            ],
+            cwd=consumer,
+            env=env,
+        )
+    )
+    (site / "mlforge_installed_guard.py").write_text(NETWORK_GUARD)
+    (site / "zz_mlforge_installed_guard.pth").write_text(
+        "import mlforge_installed_guard\n"
+    )
+    log = destination / f"consumer-{task['task']}-network.log"
+    log.write_text("")
+    guarded = dict(env, MLFORGE_GUARD_LOG=str(log))
+    control = subprocess.run(
+        [
+            python,
+            "-I",
+            "-c",
+            "import socket; socket.socket().connect(('127.0.0.1', 9))",
+        ],
+        cwd=consumer,
+        env=guarded,
+        capture_output=True,
+        timeout=30,
+    )
+    assert control.returncode == 93, "Consumer network guard inactive"
+    log.write_text("")
+    run(
+        [python, "-I", "-m", "pip", "install", "--no-index", "--find-links"]
+        + [str(wheelhouse), str(wheel)],
+        cwd=consumer,
+        env=guarded,
+    )
+    pip_check = run([python, "-I", "-m", "pip", "check"], cwd=consumer, env=guarded)
+    inputs, output, script = (consumer / n for n in ("in.json", "out.json", "c.py"))
+    inputs.write_text(json.dumps(task["try"]["records"]))
+    script.write_text(CONSUMER)
+    run(
+        [python, "-I", str(script), task["export"]["module"], str(inputs), str(output)],
+        cwd=consumer,
+        env=guarded,
+    )
+    assert _equal(task["try"]["expected"], json.loads(output.read_text()))
+    attempts = log.read_text().splitlines()
+    assert attempts and all(line.startswith("active ") for line in attempts)
+    return {
+        "task": task["task"],
+        "wheel": wheel.name,
+        "pip_check": pip_check,
+        "try_parity": "passed",
+        "network_guard": "active; zero attempts",
+        "mlforge_textual_rich_absent": True,
+    }
 
 
 def main():
