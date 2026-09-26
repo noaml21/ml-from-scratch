@@ -709,3 +709,11 @@ Acceptance contribution: A18 (Try for all tasks, typed/missing/unknown, no targe
 | A26 | P10 report and SHA protocol (pending by plan) |
 | A27 | P01 rehearsal (recovery-p01.json) + P09 rehearsal (recovery-p09.json) |
 | A28 | per-phase checklist entries; color and monochrome captures (.mlforge-build/p07-*, p08-try, p08-export, installed-*) |
+
+### P09 phase gate — VERIFIED; P09 COMPLETE (27/30)
+Candidate **a2092c04ed1244886cf587a49898f4bcc029fb89** (code), docs checkpoint 03261c5.
+- Local full suite: `OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 .venv/bin/python -m pytest -q` → **707 passed in 2061.12s, EXIT 0**, CPython 3.12.3, .mlforge-build/p09-full-pytest.log (includes six-model consumer installs; no deselections).
+- Local gate tools on the same tree: offline isolated build, twine (both PASSED), pip check, three educational comparisons, git diff --check → ALL_GATE_TOOLS_PASSED (.mlforge-build/p09-gate-tools.log); Ruff check/format (121 files) and planning validation passed.
+- Exact-SHA CI https://github.com/noaml21/ml-from-scratch/actions/runs/36269528709 (consumer_installs=true) **SUCCESS**: verify (3.12) 707 passed/1749.31s and `Release verification passed`; verify (3.13) 707 passed/1642.70s and `Release verification passed`; build/twine/demos/lint/planning passed.
+- Local release verifier EXIT 0 (p09-release.log) and peak-input guard passed (performance-3.12.json) as recorded above; recovery rehearsal passed.
+Every acceptance ID has evidence in the matrix above except A25/A26, which are P10 deliverables by plan. No known blocker. Next: P10.1 freeze a2092c0 and rerun the release verifier/peak guard on the committed clean tree, P10.2 documentation consistency and V1_BUILD_REPORT, P10.3 evidence commit.
