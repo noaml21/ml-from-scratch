@@ -18,7 +18,7 @@ passed the dataset phase gate. Goal, target, feature and model selection now lea
 through preprocessing review to real training, live status and cancellation.
 Results, selected-model provenance and task-specific terminal inspection have
 passed their phase gate. Try the model and Export package screens are implemented;
-their P08 installed-package verification is in progress. Current progress and verification are in
+their installed-package verification is recorded in BUILD_STATE. Current progress and verification are in
 [BUILD_STATE](docs/v1/BUILD_STATE.md). The educational algorithms below remain supported.
 
 Development setup (CPython 3.12 or 3.13 on Ubuntu 24.04 x86_64):
@@ -74,6 +74,40 @@ regression or `{"cluster": ...}` for K-Means; PCA uses `transform(record)` and
 returns `{"components": [...]}`. Use `None` for a missing value. The package does
 not require MLForge, Textual or Rich. See
 [EXPORT_SPEC](docs/v1/EXPORT_SPEC.md) for the full API and compatibility rules.
+
+### Supported environments, privacy and limits
+
+- Supported: CPython 3.12 and 3.13 on Linux x86_64 (Ubuntu 24.04 baseline,
+  including WSL2). Other platforms are unverified. Use a terminal of at least
+  80 × 24; 100 × 30 is the primary layout. Smaller terminals show a resize notice
+  while work, cancellation and Ctrl+Q stay available.
+- Inputs: UTF-8 CSV, TSV or flat JSONL up to 20 MiB, 20,000 rows and 100
+  columns. The source file is only read, never modified.
+- Privacy: MLForge makes no network requests and has no telemetry or browser
+  flow. Temporary session files are removed on normal exit. Exported wheels
+  contain no original rows, but learned categories, labels and parameters can
+  still reveal information about the data.
+- Limits: comparisons use one 80/20 holdout (or all rows for clustering/PCA)
+  and are not proof of future performance. There is no cross-validation, tuning,
+  time-series or grouped splitting, and no automatic refit on all rows. Exported
+  models support the same Python minor version on Linux x86_64 with the exact
+  pinned dependencies.
+- At the maximum input size on the reference machine, loading takes about
+  30 s and training both classification models about 85 s; the exact timings
+  and memory are recorded by `python scripts/measure_peak_input.py`.
+
+### Troubleshooting
+
+- *Resize to at least 80 × 24*: enlarge the terminal; your work is kept.
+- *Clipboard unavailable*: the terminal refused the clipboard request. Select the
+  prompt text or use Save.
+- *That wheel already exists*: change the module name, version or destination.
+  Existing files are never replaced.
+- *VERSION_MISMATCH* when using an exported model: create a fresh virtual
+  environment with the Python minor version shown on the export screen and
+  install the wheel there so pip installs its pinned dependencies.
+- *Missing prepared wheelhouse* from a verifier: run
+  `python scripts/verify_release.py --prepare-wheelhouse` once with network access.
 
 ## Overview
 

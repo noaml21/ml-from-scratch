@@ -47,13 +47,22 @@ jobs:
       - run: python demos/kmeans_comparison.py
       - run: python demos/logistic_regression_comparison.py
       - run: python demos/pca_comparison.py
-      - run: python scripts/verify_package.py
+      - name: Verify installed application and exported models
+        env:
+          RUN_CONSUMERS: ${{ github.event_name != 'workflow_dispatch' || inputs.consumer_installs }}
+        run: |
+          if [ "$RUN_CONSUMERS" = "true" ]; then
+            python scripts/verify_release.py
+          else
+            python scripts/verify_package.py
+          fi
       - run: python docs/v1/verify_planning.py
       - uses: actions/upload-artifact@v4
         with:
           name: package-evidence-${{ matrix.python }}
           path: |
             .mlforge-build/package-*.json
+            .mlforge-build/release-*.json
             .mlforge-build/consumer-*.json
             .mlforge-build/installed-*/
           include-hidden-files: true
