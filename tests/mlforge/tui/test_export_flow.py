@@ -157,7 +157,16 @@ async def test_export_errors_retry_success_and_usage(task, tmp_path, monkeypatch
         assert wheel.read_bytes() == b"user file"
         wheel.unlink()
 
-        await build(app, pilot)
+        # A28: resizing below the minimum during a real build neither cancels
+        # nor duplicates it; the typed form survives the round trip.
+        attempts = screen.attempts
+        await activate(app, pilot, "build")
+        await until(lambda: any(isinstance(s, Busy) for s in app.screen_stack))
+        for size in [(80, 24), (79, 23), (100, 30), (80, 24)]:
+            await pilot.resize_terminal(*size)
+            await pilot.pause()
+        await until(lambda: screen.attempts == attempts + 1)
+        await pilot.pause()
         assert isinstance(app.screen, ExportDone), text(screen, "#error")
         assert app.service.snapshot.exported_path == str(wheel)
         with zipfile.ZipFile(wheel) as archive:

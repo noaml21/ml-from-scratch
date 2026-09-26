@@ -14,7 +14,7 @@ from mlforge.contracts import TaskKind
 from mlforge.prediction.runtime import Predictor
 from mlforge.tui.app import MLForgeApp
 from mlforge.tui.screens.results import Results, SelectedModel
-from mlforge.tui.screens.shell import Busy, Help
+from mlforge.tui.screens.shell import Busy, Help, ResizeGuard
 from mlforge.tui.screens.trial import Trial, output_text
 
 
@@ -174,9 +174,15 @@ async def test_try_form_errors_missing_warnings_and_exact_runtime(
         assert ("colour: Unknown category" in warnings) == task.supervised
         assert text(screen, "#result") == output_text(task, row)
         screenshot(app, f"{task}-try-result-80")
-        await pilot.resize_terminal(100, 30)
-        await pilot.pause()
+        # A28: 100x30 -> 80x24 -> 79x23 -> 100x30 keeps input, output and focus.
+        result = text(screen, "#result")
+        for size in [(100, 30), (80, 24), (79, 23), (100, 30)]:
+            await pilot.resize_terminal(*size)
+            await pilot.pause()
+            assert isinstance(app.screen, ResizeGuard) == (size[0] < 80)
+        assert app.screen is screen and app.focused is screen.query_one("#predict")
         assert screen.query_one("#value-0", Input).value == "1000"
+        assert text(screen, "#result") == result
         screenshot(app, f"{task}-try-result-100")
 
         assert app.focused is screen.query_one("#predict")
