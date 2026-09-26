@@ -16,8 +16,8 @@ For initial onboarding start with [docs/v1/README.md](docs/v1/README.md), then r
 - No destructive Git operations, stable-branch changes, secret access, or unrelated cleanup.
 
 ## Layout
-Existing: `src/{kmeans,logistic_regression,pca}.py`, `tests/test_*.py`, `demos/`, `assets/`.
-Planned: `src/mlforge/` with application, datasets, tasks, preprocessing, models, training, execution, evaluation, prediction, export and tui modules; contracts.py holds shared records. See ARCHITECTURE.md for ownership. Specifications and evidence live in `docs/v1/`.
+Educational track: `src/{kmeans,logistic_regression,pca}.py`, `tests/test_*.py`, `demos/`, `assets/`.
+MLForge V1: `src/mlforge/` with application, datasets, tasks, preprocessing, models, training, execution, evaluation, prediction, export and tui modules; contracts.py holds shared records. See ARCHITECTURE.md for ownership. Specifications and evidence live in `docs/v1/`.
 
 ## Implementation
 Work on `v1/mlforge`, based on the complete `planning/mlforge-v1` branch; never merge into main. Follow phase gates in IMPLEMENTATION_PLAN.md. Commit small verified changes and their tests/documentation together. Do not stop for ordinary internal implementation choices. Do stop for the concrete blockers in CODEX_EXECUTION.md.

@@ -1,6 +1,6 @@
 # Extending MLForge
 
-Read [AGENTS](../AGENTS.md) first. These are practical recipes for **later authorized changes**, not extra V1 requirements. The headless dataset, ML, prediction/export, process and application layers are implemented; the full-screen shell and local browse/path/example loading routes exist, with the remaining TUI journey in progress. BUILD_STATE records current verification rather than treating implementation as release completion. [ARCHITECTURE](v1/ARCHITECTURE.md) owns dependency/contracts; [PRODUCT_SPEC](v1/PRODUCT_SPEC.md) owns scope. Keep this guide synchronized with the actual code instead of maintaining parallel interfaces here.
+Read [AGENTS](../AGENTS.md) first. These are practical recipes for **later authorized changes**, not extra V1 requirements. All V1 layers are implemented: headless dataset, ML, prediction/export, process and application services and the complete full-screen journey from Welcome through Try and Export. BUILD_STATE and V1_BUILD_REPORT record verification. [ARCHITECTURE](v1/ARCHITECTURE.md) owns dependency/contracts; [PRODUCT_SPEC](v1/PRODUCT_SPEC.md) owns scope. Keep this guide synchronized with the actual code instead of maintaining parallel interfaces here.
 
 Use the existing functions, dispatch maps and records first. Keep mathematical/domain decisions out of widgets, and UI copy/layout out of core services. Update the canonical contract when public behavior or a dependency edge changes; add relevant tests and update this guide. No automatic plugin discovery, registration decorators, abstract factories or speculative interfaces.
 
@@ -38,7 +38,7 @@ A task changes product semantics across multiple **related** boundaries; promisi
 - Tests: eligibility, preparation/leakage, training/evaluation, installed export/runtime API, complete keyboard journey and back/invalidation. Existing importer and process transport/lifecycle should remain unchanged unless the new task explicitly requires a different input or execution contract.
 
 ## Add a TUI screen
-- Add one screen in `tui/screens/` and route it from `tui/app.py` using application snapshots/commands. Use `tui/widgets/` only for UI behavior actually shared by existing screens, `theme.tcss` tokens and `help.py` entries.
+- Add one screen in `tui/screens/` and route it from `tui/app.py` using application snapshots/commands. Put UI behavior actually shared by existing screens in `tui/screens/shell.py` (as with Action and Toggle), and use `theme.tcss` tokens and `help.py` entries.
 - If a new command is needed, application/service.py validates it and updates application/state.py. The screen keeps focus/scroll/unsubmitted text locally, never an independent experiment or fitted pipeline.
 - Update UX_FLOW and use DESIGN_SYSTEM's checklist. Tests: Pilot keyboard/help/focus, validation/empty/busy/error, 100x30/80x24/resize and state preservation. Unchanged: core services when the screen only presents existing capabilities.
 

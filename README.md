@@ -8,7 +8,8 @@ The next product is MLForge, a local-first full-screen terminal ML workbench.
 Its authoritative plan starts at [docs/v1/README.md](docs/v1/README.md).
 Read [How it works](docs/HOW_IT_WORKS.md) for the system flow and
 [Extending MLForge](docs/EXTENDING_MLFORGE.md) for practical change locations.
-The `v1/mlforge` branch is under construction. Packaging and noninteractive
+The `v1/mlforge` branch holds the verified V1 release candidate (not merged or published;
+see [V1_BUILD_REPORT](docs/v1/V1_BUILD_REPORT.md)). Packaging and noninteractive
 `mlforge --help` / `mlforge --version`, headless dataset/schema services, synthetic
 examples, six-model fitting/evaluation and standalone model export are implemented;
 the Textual shell supports local browsing, manual paths, packaged examples and a
@@ -45,7 +46,8 @@ The package verifier checks app packaging, dataset review and all four training/
 journeys through Pilot and real PTYs, with network attempts blocked in parent and worker processes.
 The ordinary test suite also includes
 six real exported-model consumer installations and requires the prepared local
-wheelhouse; missing prerequisites fail explicitly. The full TUI journey is not yet release verified. Run `mlforge` for the current shell.
+wheelhouse; missing prerequisites fail explicitly. `python scripts/verify_release.py` runs the
+complete installed-application and exported-model verification. Run `mlforge` to start.
 
 ### Try and export a model
 
@@ -92,9 +94,9 @@ not require MLForge, Textual or Rich. See
   time-series or grouped splitting, and no automatic refit on all rows. Exported
   models support the same Python minor version on Linux x86_64 with the exact
   pinned dependencies.
-- At the maximum input size on the reference machine, loading takes about
-  30 s and training both classification models about 85 s; the exact timings
-  and memory are recorded by `python scripts/measure_peak_input.py`.
+- At the maximum input size on the reference machine, loading took 25–31 s
+  and training both classification models 65–84 s; exact timings and memory
+  are recorded by `python scripts/measure_peak_input.py`.
 
 ### Troubleshooting
 

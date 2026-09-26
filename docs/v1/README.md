@@ -1,6 +1,6 @@
 # MLForge V1 specification index
 
-Status: implementation in progress on v1/mlforge; V1 is not release verified.
+Status: V1 release candidate implemented and verified on v1/mlforge; see [V1_BUILD_REPORT.md](V1_BUILD_REPORT.md). Not merged or published.
 See BUILD_STATE.md for the current checkpoint.
 Planning date: 2026-09-18. All prose below this directory is in English so subsequent implementers and reviewers need no chat context.
 
@@ -26,7 +26,7 @@ Start with REPOSITORY_AUDIT.md for what actually exists. Then read PRODUCT_SPEC.
 | Historical implementation evidence; initially not started | [BUILD_LOG.md](BUILD_LOG.md) |
 | Planning consistency/coverage audit | [PLANNING_REVIEW.md](PLANNING_REVIEW.md) |
 
-Practical guides: [HOW_IT_WORKS](../HOW_IT_WORKS.md) explains control/data flow and ownership; [EXTENDING_MLFORGE](../EXTENDING_MLFORGE.md) maps seven extension types to planned files and tests. Both are guides, not competing normative contracts.
+Practical guides: [HOW_IT_WORKS](../HOW_IT_WORKS.md) explains control/data flow and ownership; [EXTENDING_MLFORGE](../EXTENDING_MLFORGE.md) maps seven extension types to the files and tests they touch. Both are guides, not competing normative contracts.
 
 The implementer creates `V1_BUILD_REPORT.md` at release. Do not create a report that implies unperformed verification. README and audit are indexes/evidence; they do not override normative behavior. There are no hidden requirements from the planning chat.
 

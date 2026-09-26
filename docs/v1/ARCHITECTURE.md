@@ -3,12 +3,12 @@
 ## Package and direction
 Add `src/mlforge/`; do not move the original `src/{kmeans,logistic_regression,pca}.py`. Setuptools src-layout discovery includes only `mlforge*`. Original checkout imports `src.kmeans` remain valid and original demos remain runnable. Distribution provides `mlforge = mlforge.__main__:main` and `python -m mlforge`; noninteractive `--version` and `--help` do not enter full screen.
 
-Planned cohesive modules (paths below are contracts for implementation, not existing code):
+Cohesive modules (implemented in V1; the tree is the ownership contract):
 ```text
 src/mlforge/
   __main__.py        command-line bootstrap; compose application and TUI
   contracts.py       shared task/error/experiment/result records; no services
-  application/       state.py, service.py
+  application/       state.py, service.py, artifacts.py (owned JSON adaptation)
   datasets/          records.py, importers.py, inference.py, validation.py, prepare.py
   tasks.py           task descriptions, eligibility and feature/target rules
   preprocessing.py   prepare shared split/policy; build unfitted transforms
@@ -18,7 +18,7 @@ src/mlforge/
   evaluation.py      metric/diagnostic calculations and ranking rules
   prediction/        runtime.py, schema.py
   export/            wheel.py, templates/
-  tui/               app.py, screens/, widgets/, theme.tcss, help.py
+  tui/               app.py, screens/ (shared Action/Toggle in shell.py), theme.tcss, help.py
   examples/          packaged synthetic datasets + provenance
 ```
 `execution` is named for its real responsibility: parse/prepare/train/predict/export child operations, not just training. `training.py` owns candidate fitting. `datasets/prepare.py` generates the Prepare with AI text; it never performs ML preprocessing. `prediction/schema.py` builds and validates export metadata; `datasets/inference.py` infers column types, not model predictions. Keep these meanings in module docstrings. Split files only when a cohesive implementation becomes unwieldy; do not create a generic utils/common/services hierarchy.
@@ -117,6 +117,8 @@ Setuptools build for app and generated wheels, standard build frontend with --no
 Before large UI work, prove all six standard pipelines round-trip with skops and the dependency set. This is a gated technical spike with tests, not a second exporter.
 
 ## P01 implementation notes
+The dated notes below record each slice as it landed. Items they describe as pending were completed by later slices; the sections above and BUILD_LOG are current.
+
 Package discovery now includes only `mlforge*`; the bootstrap handles help/version without presentation imports. The no-argument workflow now lazily composes the P06 Textual shell with one application Service; the full journey remains in progress. Runtime constraints resolve NumPy 2.5.3, SciPy 1.18.1, sklearn 1.9.1, skops 0.15.0 and Textual 8.2.8, with full transitive pins in requirements/constraints-runtime.txt. Development/demo pins are separate in constraints-dev.txt. The P01 package verifier builds wheel/sdist, installs in isolated environments and checks entrypoints outside the source import path with pip indexes disabled; model-export and TUI verification are later gates.
 
 ## P02.1 implemented contracts
