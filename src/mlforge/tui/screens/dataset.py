@@ -5,7 +5,6 @@ from pathlib import Path
 from rich.text import Text
 from textual import work
 from textual.binding import Binding
-from textual.content import Content
 from textual.message import Message
 from textual.widgets import Button, Checkbox, DirectoryTree, Input, OptionList, Static
 from textual.widgets.option_list import Option
@@ -14,7 +13,7 @@ from mlforge.contracts import DomainError
 from mlforge.datasets.records import visible_text
 from mlforge.tui.screens.prepare import Prepare
 from mlforge.tui.screens.preview import Preview
-from mlforge.tui.screens.shell import Action, Busy, Frame, operation_message
+from mlforge.tui.screens.shell import Action, Busy, Frame, Toggle, operation_message
 
 
 class Welcome(Frame):
@@ -203,14 +202,6 @@ class LocalTree(DirectoryTree):
         )
 
 
-class HiddenFiles(Checkbox):
-    """Keep checked state explicit even when terminal color is unavailable."""
-
-    @property
-    def _button(self):
-        return Content("[x]" if self.value else "[ ]")
-
-
 class Browse(Source):
     heading = "Browse local files"
     primary_id = "files"
@@ -218,7 +209,7 @@ class Browse(Source):
 
     def content(self):
         yield Static(visible_text(str(Path.cwd())), id="directory", markup=False)
-        yield HiddenFiles("Show hidden files", id="hidden")
+        yield Toggle("Show hidden files", id="hidden")
         yield LocalTree(
             Path.cwd(),
             tuple(item.extension for item in self.app.service.formats),

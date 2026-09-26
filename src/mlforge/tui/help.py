@@ -250,3 +250,34 @@ CATALOG.update(
         ),
     }
 )
+
+CATALOG["try"] = (
+    "Try the model",
+    "Enter one value per selected input; the target is never an input. Missing "
+    "uses the default learned from training rows. Numbers outside the training "
+    "range are used exactly as entered and produce a warning; they are never "
+    "clipped. New category text is allowed and uses the fitted unknown-category "
+    "encoding. Predict runs the exact evaluated pipeline through the same runtime "
+    "as the exported package, in a local child process. Nothing is retrained. "
+    "Classification shows a label, regression a number, K-Means an arbitrary "
+    "cluster ID and PCA its component values.",
+)
+
+CATALOG["export"] = (
+    "Export package",
+    "Builds one installable Python wheel from the exact evaluated pipeline, "
+    "locally and without network access. Nothing is retrained or uploaded. The "
+    "folder is created if needed; an existing wheel is never replaced, so change "
+    "the name, version or folder instead. The module name is what you import. "
+    "The wheel contains the fitted model, input names, learned categories and "
+    "labels, never original rows, but learned values can still reveal "
+    "information. It supports the same Python minor version on Linux x86_64 "
+    "with exact pinned dependencies. Errors keep the selected model for retry.",
+)
+CATALOG["export-done"] = (
+    "Package created",
+    "Install the wheel into a fresh virtual environment with the same Python "
+    "minor version; pip installs its pinned dependencies. The package does not "
+    "need MLForge. Predictor validates its bundled model before use. The text "
+    "is selectable; nothing was published or shared.",
+)

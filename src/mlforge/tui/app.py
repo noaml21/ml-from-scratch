@@ -12,6 +12,7 @@ from mlforge.application.state import Activity
 from mlforge.contracts import CandidateStatus
 from mlforge.tui.help import CATALOG
 from mlforge.tui.screens.dataset import Load, Welcome
+from mlforge.tui.screens.results import Results
 from mlforge.tui.screens.shell import Confirm, Help, ResizeGuard
 
 
@@ -118,6 +119,11 @@ class MLForgeApp(App):
     def return_to_load(self):
         """Return to the existing chooser without replacing accepted session state."""
         while not isinstance(self.screen, (Load, Welcome)):
+            self.pop_screen()
+
+    def return_to_results(self):
+        """Leave Try/Export guidance without changing the accepted selection."""
+        while not isinstance(self.screen, Results):
             self.pop_screen()
 
     def action_letter_back(self):

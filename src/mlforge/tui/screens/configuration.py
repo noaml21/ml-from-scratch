@@ -13,7 +13,7 @@ from mlforge.contracts import DomainError, TaskKind
 from mlforge.datasets.records import visible_text
 from mlforge.tui.help import CATALOG
 from mlforge.tui.screens.results import Results
-from mlforge.tui.screens.shell import Action, Busy, Frame, operation_message
+from mlforge.tui.screens.shell import Action, Busy, Frame, Toggle, operation_message
 from mlforge.tui.screens.training import Training
 
 
@@ -146,7 +146,7 @@ class Target(ConfigurationFrame):
 
     def content(self):
         yield Choices(id="choices", markup=False)
-        yield Checkbox("Show all columns", id="show-all")
+        yield Toggle("Show all columns", id="show-all")
         yield Static("", id="error", classes="error", markup=False)
 
     def actions(self):

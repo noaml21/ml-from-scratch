@@ -4,12 +4,15 @@ import json
 
 from rich.style import Style
 from rich.text import Text
+from textual import work
 from textual.widgets import Button, DataTable, Static
 
 from mlforge.contracts import CandidateStatus, DomainError, TaskKind
 from mlforge.datasets.records import visible_text
 from mlforge.tui.help import CATALOG
+from mlforge.tui.screens.export import ExportPackage
 from mlforge.tui.screens.shell import Action, Frame
+from mlforge.tui.screens.trial import Trial
 
 
 def cell(value, width=18, *, numeric=False):
@@ -336,23 +339,42 @@ class SelectedModel(Frame):
 
     def actions(self):
         yield Action("Inspect details", id="inspect", variant="primary")
+        yield Action("Try the model", id="try")
+        yield Action("Export package", id="export")
         yield Action("Back to results", id="back")
 
     def on_mount(self):
         self.query_one("#inspect").focus()
 
+    def fail(self, error):
+        self.query_one("#error", Static).update(
+            f"Error: {error.message} {error.action}"
+        )
+
     def on_button_pressed(self, event: Button.Pressed):
-        if event.button.id != "inspect":
+        if event.button.id == "back":
             self.app.action_back()
             return
         try:
             self.app.service.select_candidate(self.model_id, run_id=self.run_id)
         except DomainError as error:
-            self.query_one("#error", Static).update(
-                f"Error: {error.message} {error.action}"
-            )
+            self.fail(error)
         else:
-            self.app.push_screen(Inspection())
+            if event.button.id == "inspect":
+                self.app.push_screen(Inspection())
+            else:
+                self.open_with_fields(event.button.id)
+
+    @work(group="selected", exclusive=True)
+    async def open_with_fields(self, action):
+        try:
+            fields = await self.app.service.prediction_fields()
+        except DomainError as error:
+            self.fail(error)
+            return
+        task = self.app.service.snapshot.selected.bundle.task
+        screen = Trial(fields, task) if action == "try" else ExportPackage(fields)
+        self.app.after_modal(lambda: self.app.push_screen(screen))
 
 
 class Inspection(Frame):

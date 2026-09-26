@@ -114,6 +114,21 @@ async def test_export_exact_bytes_context_and_no_replace(trained_app, tmp_path):
     assert sentinel.read_text() == "keep"
 
 
+def test_parent_publication_failures_explain_recovery():
+    from types import SimpleNamespace
+
+    from mlforge.application.artifacts import failure_result
+
+    for code, action in [
+        ("EXPORT_EXISTS", "Change name, version or destination."),
+        ("EXPORT_IO", "Choose a writable destination with free space and retry."),
+    ]:
+        outcome = SimpleNamespace(error_code=code, reported=False)
+        assert failure_result(None, outcome).action == action
+    other = failure_result(None, SimpleNamespace(error_code="TIMEOUT", reported=False))
+    assert other.message == "The operation could not complete."
+
+
 async def test_partial_run_export_context_does_not_mutate_bundle(
     trained_app, tmp_path, monkeypatch
 ):

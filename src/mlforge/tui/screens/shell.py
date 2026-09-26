@@ -5,8 +5,9 @@ import time
 from textual import events
 from textual.binding import Binding
 from textual.containers import Container, Horizontal, VerticalScroll
+from textual.content import Content
 from textual.screen import ModalScreen, Screen
-from textual.widgets import Button, Footer, Static
+from textual.widgets import Button, Checkbox, Footer, Static
 
 from mlforge.application.state import Activity
 from mlforge.datasets.records import visible_text
@@ -32,6 +33,14 @@ class Action(Button):
 
     def on_blur(self, event: events.Blur):
         self.label = f"  {self.caption}"
+
+
+class Toggle(Checkbox):
+    """Keep checked state explicit even when terminal color is unavailable."""
+
+    @property
+    def _button(self):
+        return Content("[x]" if self.value else "[ ]")
 
 
 class Frame(Screen):

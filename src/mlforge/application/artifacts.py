@@ -1,6 +1,6 @@
 """Owned JSON adaptation and semantic checks, without fitting or session mutation."""
 
-from mlforge.application.state import Failure
+from mlforge.application.state import Failure, InputField
 from mlforge.contracts import (
     CandidateStatus,
     candidate_from_data,
@@ -99,12 +99,29 @@ def candidate_result(root, outcome, prepared):
     )
 
 
+PARENT_FAILURES = {
+    "EXPORT_EXISTS": (
+        "That wheel already exists.",
+        "Change name, version or destination.",
+    ),
+    "EXPORT_IO": (
+        "Could not write and publish the wheel safely.",
+        "Choose a writable destination with free space and retry.",
+    ),
+}
+
+
 def failure_result(root, outcome):
     """Service failures have a separate bounded manifest; never trust raw stderr."""
     fallback = Failure(
         outcome.error_code or "WORKER_FAILED",
-        "The operation could not complete.",
-        "Retry or go back and review the configuration.",
+        *PARENT_FAILURES.get(
+            outcome.error_code,
+            (
+                "The operation could not complete.",
+                "Retry or go back and review the configuration.",
+            ),
+        ),
     )
     if not outcome.reported:
         return fallback
@@ -133,6 +150,34 @@ def failure_result(root, outcome):
         return Failure(**value)
     except (OSError, ValueError, KeyError, TypeError):
         return fallback
+
+
+def input_fields(root, schema_ref):
+    """Hash-verified fitted inputs of an accepted bundle, in schema order."""
+    value = parse_json(verify_artifact(root, schema_ref), MAX_FILE)
+    if type(value) is not dict or type(value.get("fields")) is not list:
+        raise ProtocolError()
+    fields = []
+    for field in value["fields"]:
+        if (
+            type(field) is not dict
+            or not {"name", "type"} <= set(field)
+            or set(field) - {"name", "type", "minimum", "maximum", "categories"}
+            or field["type"] not in ("Number", "Category", "Boolean")
+        ):
+            raise ProtocolError()
+        categories = field.get("categories", [])
+        bounds = (field.get("minimum"), field.get("maximum"))
+        if type(categories) is not list or any(type(c) is not str for c in categories):
+            raise ProtocolError()
+        if any(b is not None and type(b) not in (int, float) for b in bounds):
+            raise ProtocolError()
+        fields.append(
+            InputField(
+                record_text(field["name"]), field["type"], tuple(categories), *bounds
+            )
+        )
+    return tuple(fields)
 
 
 def bundle_inputs(root, identity, refs, records):

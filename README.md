@@ -16,7 +16,9 @@ first-50-row preview with schema statistics and complete cell details.
 Schema correction, reset, explicit confirmation and local Prepare Copy/Save have
 passed the dataset phase gate. Goal, target, feature and model selection now lead
 through preprocessing review to real training, live status and cancellation.
-Results, selected-model provenance and task-specific terminal inspection are implemented; their P07 phase gate and Try Model/export screens remain in progress. Current progress and verification are in
+Results, selected-model provenance and task-specific terminal inspection have
+passed their phase gate. Try the model and Export package screens are implemented;
+their P08 installed-package verification is in progress. Current progress and verification are in
 [BUILD_STATE](docs/v1/BUILD_STATE.md). The educational algorithms below remain supported.
 
 Development setup (CPython 3.12 or 3.13 on Ubuntu 24.04 x86_64):
@@ -44,6 +46,34 @@ journeys through Pilot and real PTYs, with network attempts blocked in parent an
 The ordinary test suite also includes
 six real exported-model consumer installations and requires the prepared local
 wheelhouse; missing prerequisites fail explicitly. The full TUI journey is not yet release verified. Run `mlforge` for the current shell.
+
+### Try and export a model
+
+After training, press Enter on a completed result to open **Selected model**.
+**Try the model** shows one input per selected feature; mark an input Missing to
+use the default learned from training rows. Numbers outside the training range
+are used as entered with a warning, and new category text uses the fitted
+unknown-category encoding. Nothing is retrained.
+
+**Export package** asks for a destination folder (default `./exports`), a Python
+module name (default `my_model`) and a version (default `1.0.0`), then builds one
+wheel locally without network access. Existing files are never replaced. The
+wheel holds the exact evaluated pipeline, its input schema and learned
+categories/labels, never your original rows. Install it into a fresh virtual
+environment with the same Python minor version on Linux x86_64:
+
+```bash
+python3.12 -m venv model-env
+. model-env/bin/activate
+python -m pip install exports/my_model-1.0.0-py3-none-any.whl
+python -c 'from my_model import Predictor; print(Predictor().metadata["task"])'
+```
+
+`Predictor().predict(record)` returns `{"prediction": ...}` for classification and
+regression or `{"cluster": ...}` for K-Means; PCA uses `transform(record)` and
+returns `{"components": [...]}`. Use `None` for a missing value. The package does
+not require MLForge, Textual or Rich. See
+[EXPORT_SPEC](docs/v1/EXPORT_SPEC.md) for the full API and compatibility rules.
 
 ## Overview
 

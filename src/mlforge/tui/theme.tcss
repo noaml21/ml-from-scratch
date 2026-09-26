@@ -174,3 +174,13 @@ Training #candidates { height: auto; max-height: 8; }
 Results #results { height: auto; max-height: 8; }
 Inspection DataTable { height: auto; max-height: 8; margin-bottom: 1; }
 SelectedModel #model-name { text-style: bold; margin-bottom: 1; }
+.try-field { height: auto; margin-bottom: 1; }
+.try-row { height: auto; }
+.try-row Input { width: 1fr; margin-top: 0; }
+.try-row Checkbox { width: auto; margin: 1 0 0 2; }
+.field-name { text-style: bold; }
+Select { width: 1fr; }
+SelectCurrent { background: $surface; color: $text; border: solid $border; }
+Select:focus > SelectCurrent { border: solid $accent; }
+SelectOverlay { background: $elevated; color: $text; border: solid $accent; }
+#result { text-style: bold; margin-top: 1; }

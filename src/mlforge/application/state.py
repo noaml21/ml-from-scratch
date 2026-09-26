@@ -85,6 +85,17 @@ class Failure:
 
 
 @dataclass(frozen=True)
+class InputField:
+    """One Try input from the selected bundle's fitted schema (never raw rows)."""
+
+    name: str
+    kind: str
+    categories: tuple[str, ...] = ()
+    minimum: float | None = None
+    maximum: float | None = None
+
+
+@dataclass(frozen=True)
 class Prediction:
     run_id: str
     revisions: Revisions

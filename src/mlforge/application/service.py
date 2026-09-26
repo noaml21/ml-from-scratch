@@ -1049,6 +1049,20 @@ class Service:
             _error("RESULT", "Choose a completed current model.", "Return to Results.")
         return selected, self._bundles[selected.model_id]
 
+    async def prediction_fields(self):
+        """Try inputs for the selected accepted bundle; no fitting or row access."""
+        _, refs = self._selected_bundle()
+        try:
+            return await self._io(
+                artifacts.input_fields, self._coordinator.root, refs[1]
+            )
+        except (OSError, ValueError):
+            _error(
+                "RESULT",
+                "The selected model's inputs could not be read.",
+                "Return to Results and select the model again.",
+            )
+
     async def predict(self, records):
         selected, refs = self._selected_bundle()
         if type(records) not in (list, tuple) or len(records) > 1000:
@@ -1114,6 +1128,20 @@ class Service:
     async def export(self, destination, module_name="my_model", version="1.0.0"):
         selected, refs = self._selected_bundle()
         options = ExportOptions(module_name, version)
+        try:
+            existing = (Path(destination).expanduser() / options.wheel_name).exists()
+        except (OSError, ValueError, RuntimeError):
+            existing = False  # Staging reports an unusable destination safely.
+        if existing:
+            # Publication is no-replace regardless; this only fails before building.
+            self._failure(
+                Failure(
+                    "EXPORT_EXISTS",
+                    "That wheel already exists.",
+                    "Change name, version or destination.",
+                )
+            )
+            return None
         run = self._state.run
         partial = (
             run.status == RunStatus.PARTIAL
@@ -1172,8 +1200,10 @@ class Service:
             raise
         except (OSError, ValueError) as error:
             self._failure(
-                Failure(
-                    error.code if isinstance(error, DomainError) else "EXPORT_IO",
+                Failure(error.code, error.message, error.action)
+                if isinstance(error, DomainError)
+                else Failure(
+                    "EXPORT_IO",
                     "Export could not complete safely.",
                     "Choose a writable destination or different name and retry.",
                 )

@@ -199,6 +199,14 @@ def _bundle_inputs(root, request):
     return result.bundle, records
 
 
+INPUT_ERRORS = {
+    "NUMBER_REQUIRED": "Enter a number, or choose Missing.",
+    "NUMBER_RANGE": "Enter a finite number within the supported range.",
+    "BOOLEAN_REQUIRED": "Choose true or false, or choose Missing.",
+    "CATEGORY_TEXT_REQUIRED": "Enter category text, or choose Missing.",
+}
+
+
 def _predict(root, request, options, progress):
     from mlforge.prediction.runtime import InputValidationError, Predictor
 
@@ -213,6 +221,16 @@ def _predict(root, request, options, progress):
     try:
         predictions = operation(records)
     except InputValidationError as error:
+        # The shared runtime reports "Record N: CODE: field"; name the field only.
+        match = re.fullmatch(r"Record (\d+): ([A-Z_]+): (.+)", str(error), re.S)
+        if match and match[2] in INPUT_ERRORS:
+            raise DomainError(
+                "PREDICT_INPUT",
+                INPUT_ERRORS[match[2]],
+                "Correct the highlighted input.",
+                row=int(match[1]),
+                column=match[3],
+            ) from None
         raise DomainError(
             "PREDICT_INPUT", str(error), "Correct the selected inputs."
         ) from None
