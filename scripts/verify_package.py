@@ -191,6 +191,18 @@ def verify(wheelhouse):
                 cwd=runtime,
                 env=guarded_env,
             )
+            run(
+                [
+                    python,
+                    "-I",
+                    str(ROOT / "scripts/installed_dataset_smoke.py"),
+                    str(destination),
+                    str(ROOT),
+                    "--training",
+                ],
+                cwd=runtime,
+                env=guarded_env,
+            )
             attempts = log.read_text().splitlines()
             assert attempts and all(line.startswith("active ") for line in attempts)
             # Real loads/overrides use fresh operation interpreters, each guarded.
@@ -225,6 +237,9 @@ print('5 packaged examples parsed and inferred')
                     "examples": examples,
                     "dataset_journey": json.loads(
                         (destination / "journey.json").read_text()
+                    ),
+                    "training_journey": json.loads(
+                        (destination / "training-journey.json").read_text()
                     ),
                     "network_guard": "active in parent/children; zero attempts",
                     "pip_check": run(
