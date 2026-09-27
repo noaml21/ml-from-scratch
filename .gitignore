@@ -3,9 +3,17 @@ reference/
 __pycache__/
 *.pyc
 .pytest_cache/
+.ruff_cache/
+build/
+dist/
+*.egg-info/
+.mlforge-build/
 
 .vscode/
 
 .DS_Store
 Thumbs.db
 Desktop.ini
+
+# Default MLForge export destination when run from a checkout
+exports/
