@@ -1,5 +1,7 @@
 # MLForge V1 specification index
 
+This directory is the V1 engineering record. To use MLForge, start with [Getting started](../getting-started.md); for an overview of all documentation see [docs/README.md](../README.md).
+
 Status: V1 release candidate implemented and verified on v1/mlforge; see [V1_BUILD_REPORT.md](V1_BUILD_REPORT.md). Not merged or published.
 See BUILD_STATE.md for the current checkpoint.
 Planning date: 2026-09-18. All prose below this directory is in English so subsequent implementers and reviewers need no chat context.

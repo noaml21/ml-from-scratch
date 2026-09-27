@@ -1,8 +1,8 @@
 # How MLForge works
 
-The headless workflow is implemented: bounded local datasets and schema review, task preparation, isolated training/evaluation, immutable application state, shared prediction and verified wheel export. The full-screen dataset, configuration, training, Results and inspection journeys are implemented, including help/focus/resize/quit behavior, followed by the Try and Export screens. [BUILD_STATE](v1/BUILD_STATE.md) and [V1_BUILD_REPORT](v1/V1_BUILD_REPORT.md) record verification; [AGENTS](../AGENTS.md) and [ARCHITECTURE](v1/ARCHITECTURE.md) define implementation rules and boundaries. The diagrams show the implemented presentation journey.
-
 MLForge turns a small local table into a tested model and a reusable Python package, entirely through a terminal application. [PRODUCT_SPEC](v1/PRODUCT_SPEC.md) defines the four tasks and deliberately small scope. The original NumPy algorithms remain the educational track alongside the new workbench.
+
+Every layer described here is implemented, from the headless services to the full terminal journey through Try and Export. [ARCHITECTURE](v1/ARCHITECTURE.md) and [AGENTS](../AGENTS.md) define the binding rules and boundaries; [V1_BUILD_REPORT](v1/V1_BUILD_REPORT.md) records verification. This page explains; it does not override them.
 
 ## One view of control flow
 ```mermaid
