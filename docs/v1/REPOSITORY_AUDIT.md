@@ -3,7 +3,7 @@
 ## Evidence and freshness
 
 On 2026-09-18 GitHub branch listings and local clean checkouts agreed:
-- `noaml21/ml-from-scratch`, default/only remote branch `main`: [93272b473b6079960e903b45bd3a625c0d19be59](https://github.com/noaml21/ml-from-scratch/tree/93272b473b6079960e903b45bd3a625c0d19be59).
+- `noaml21/ml-from-scratch`, default/only remote branch `main`: [93272b473b6079960e903b45bd3a625c0d19be59](https://github.com/noaml21/mlforge/tree/93272b473b6079960e903b45bd3a625c0d19be59).
 - Reference `noaml21/linux-concurrency-ipc`, `v3/reliable-ipc-lab`: [4711931ec1eca8238cc3aa2e4838263182f08fec](https://github.com/noaml21/linux-concurrency-ipc/tree/4711931ec1eca8238cc3aa2e4838263182f08fec).
 
 Read all three algorithm modules, all three test modules, all six demos/comparisons, requirements, ignore file and README. There is no pyproject/setup, installed command, CI workflow, importer, license file, package namespace initializer, orchestration or TUI in the ML baseline. Original files are small and understandable; a wholesale rewrite is unjustified.
