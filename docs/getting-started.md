@@ -13,7 +13,7 @@ This guide covers installing MLForge, a first session, the keyboard, trying a mo
 MLForge is installed from source; it is not published on PyPI.
 
 ```bash
-git clone --branch v1/mlforge https://github.com/noaml21/ml-from-scratch.git
+git clone https://github.com/noaml21/ml-from-scratch.git
 cd ml-from-scratch
 python3.12 -m venv .venv
 source .venv/bin/activate
