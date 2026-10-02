@@ -23,7 +23,7 @@ Read all three algorithm modules, all three test modules, all six demos/comparis
 | README | Accurately calls algorithms educational and sklearn a reference tool | Preserve that explanation in an educational section, distinguish new workbench sklearn runtime use |
 | CI / license | Neither present in tracked tree | Add CI; do not invent a license grant or publish to PyPI |
 
-Planning baseline test attempts with system Python and the bundled workspace Python both failed before collection because pytest is absent. This is environment evidence, not a failing algorithm test. A repository-local venv was then created using unchanged requirements.txt: all 15 tests passed on Python 3.12.3; pip check passed; all three comparison scripts completed. K-Means cost matched at 47.699582; logistic test accuracy matched at 0.9200; PCA reconstruction MSE matched at 0.00407484 (component signs differ legitimately). This verifies the educational baseline, not V1 packaging or a Python 3.13 installation.
+With unchanged requirements.txt installed into a repository-local venv, all 15 tests passed on Python 3.12.3; pip check passed; all three comparison scripts completed. K-Means cost matched at 47.699582; logistic test accuracy matched at 0.9200; PCA reconstruction MSE matched at 0.00407484 (component signs differ legitimately). This verifies the educational baseline, not V1 packaging or a Python 3.13 installation.
 
 ## Reference lessons, grounded in code
 
@@ -36,7 +36,7 @@ Read `ipc_lab/models.py`, `runner.py`, `experiment.py`, `presentation.py`, `app.
 - TCSS gives consistent surfaces, focus and restrained accents. Its fixed horizontal forms and single large App are not MLForge's target architecture; use separate screens and responsive content.
 - Documentation separates timing meaning, ownership, limitations and measured evidence. Adopt this honesty for ML metrics, fit state and cancellation.
 
-No claim is made that the IPC UI was manually reviewed live in this planning task. No IPC code or branches are modified. No dependency or code copied from it.
+The IPC UI was reviewed from code and tests, not run live. No IPC code or branches are modified. No dependency or code copied from it.
 
 ## Decisions resulting from audit
 
@@ -59,5 +59,5 @@ Consulted during planning (2026-09-18); pin actual implementation dependencies, 
 
 These links support library facts; product limits and choices in the specifications are MLForge design decisions.
 
-## P01 implementation additions (2026-09-19)
-The original baseline above remains historical evidence. The implementation branch adds explicit setuptools packaging, noninteractive command bootstrap, dependency constraints, bootstrap tests, isolated package verification and a two-Python CI workflow. All original algorithm/test/demo/asset files remain unchanged. V1 services and TUI are not yet implemented; current evidence belongs in BUILD_LOG and BUILD_STATE.
+## After the audit
+The baseline above is the pre-implementation record. V1 added explicit setuptools packaging, dependency constraints, isolated package verification, a two-Python CI workflow and the complete application, while all original algorithm, test, demo and asset files remained unchanged. [V1_BUILD_REPORT](V1_BUILD_REPORT.md) describes the delivered result.
