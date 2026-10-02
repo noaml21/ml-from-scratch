@@ -2,7 +2,7 @@
 
 MLForge turns a small local table into a tested model and a reusable Python package, entirely through a terminal application. [PRODUCT_SPEC](v1/PRODUCT_SPEC.md) defines the four tasks and deliberately small scope. The original NumPy algorithms remain the educational track alongside the new workbench.
 
-Every layer described here is implemented, from the headless services to the full terminal journey through Try and Export. [ARCHITECTURE](v1/ARCHITECTURE.md) and [AGENTS](../AGENTS.md) define the binding rules and boundaries; [V1_BUILD_REPORT](v1/V1_BUILD_REPORT.md) records verification. This page explains; it does not override them.
+Every layer described here is implemented, from the headless services to the full terminal journey through Try and Export. [ARCHITECTURE](v1/ARCHITECTURE.md) and the [project rules](EXTENDING_MLFORGE.md#project-rules) define the binding rules and boundaries; [V1_BUILD_REPORT](v1/V1_BUILD_REPORT.md) records verification. This page explains; it does not override them.
 
 ## One view of control flow
 ```mermaid

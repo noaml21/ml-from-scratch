@@ -1,8 +1,18 @@
 # Extending MLForge
 
-Read [AGENTS](../AGENTS.md) first. These are practical recipes for **later authorized changes**, not extra V1 requirements. All V1 layers are implemented: headless dataset, ML, prediction/export, process and application services and the complete full-screen journey from Welcome through Try and Export. BUILD_STATE and V1_BUILD_REPORT record verification. [ARCHITECTURE](v1/ARCHITECTURE.md) owns dependency/contracts; [PRODUCT_SPEC](v1/PRODUCT_SPEC.md) owns scope. Keep this guide synchronized with the actual code instead of maintaining parallel interfaces here.
+These are practical recipes for changing MLForge after V1; they add no V1 requirements. All V1 layers are implemented: headless dataset, ML, prediction/export, process and application services and the complete full-screen journey from Welcome through Try and Export. [V1_BUILD_REPORT](v1/V1_BUILD_REPORT.md) records verification. [ARCHITECTURE](v1/ARCHITECTURE.md) owns dependency/contracts; [PRODUCT_SPEC](v1/PRODUCT_SPEC.md) owns scope. Keep this guide synchronized with the actual code instead of maintaining parallel interfaces here.
 
 Use the existing functions, dispatch maps and records first. Keep mathematical/domain decisions out of widgets, and UI copy/layout out of core services. Update the canonical contract when public behavior or a dependency edge changes; add relevant tests and update this guide. No automatic plugin discovery, registration decorators, abstract factories or speculative interfaces.
+
+## Project rules
+These invariants hold for every change. The specifications in [docs/v1](v1/README.md) are the source of truth; this list summarizes them.
+
+- **UI is presentation only.** Core modules must import without Textual or Rich. Follow the dependency table in ARCHITECTURE: the application owns session state, execution owns subprocesses, training owns fitting. `tests/mlforge/test_architecture.py` enforces the import graph; never bypass it with dynamic imports.
+- **Split before fitting.** Supervised preprocessing is fitted on training rows only. Export the exact evaluated pipeline; never silently refit.
+- **No network.** No network access, telemetry, browser flow, remote AI calls or user-data logging in the application.
+- **No unsafe execution or loading.** No shell interpolation of paths, no arbitrary model loading and no automatic trust of serialized types.
+- **Keep the educational track.** The original NumPy APIs, tests, demos and assets keep working; the educational algorithms do not become the product engine.
+- **Test and document with the change.** Add tests for every non-trivial behavior. When a contract or dependency edge changes, update ARCHITECTURE or the owning specification, both practical guides and the extension tests together.
 
 ## Add a model to an existing task
 - Add a concrete ModelSpec/factory with stable ID, task, explicit defaults, scale policy and help key in `models.py`; the model screen obtains its choices through the application, not a second hard-coded estimator list.
@@ -43,7 +53,7 @@ A task changes product semantics across multiple **related** boundaries; promisi
 - Update UX_FLOW and use DESIGN_SYSTEM's checklist. Tests: Pilot keyboard/help/focus, validation/empty/busy/error, 100x30/80x24/resize and state preservation. Unchanged: core services when the screen only presents existing capabilities.
 
 ## Before submitting any extension
-Run targeted tests, architecture import checks and the existing suite; use [TEST_PLAN](v1/TEST_PLAN.md) for export/process/TUI integration gates. Update canonical specs and guides only where affected. Record decisions/evidence in BUILD_LOG and next action in BUILD_STATE. If a small extension touches unrelated importers, lifecycle code and many screens, inspect the coupling before adding another abstraction. Locality means understandable responsibilities, not an arbitrary maximum file count.
+Run targeted tests, architecture import checks and the existing suite; use [TEST_PLAN](v1/TEST_PLAN.md) for export/process/TUI integration gates. Update canonical specs and guides only where affected. If a small extension touches unrelated importers, lifecycle code and many screens, inspect the coupling before adding another abstraction. Locality means understandable responsibilities, not an arbitrary maximum file count.
 
 Current inference extension points are `normalize_record`, `load_pipeline`, `validate_tree_state`, `fitted_schema`, and `save_bundle`. Export uses `distribution_name`/`wheel_stem` independently of Python import names; changes must preserve repeated/trailing underscore regression coverage and reserved distribution checks. The exact runtime source is packaged, not maintained as a second template.
 

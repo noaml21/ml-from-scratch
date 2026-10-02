@@ -65,7 +65,7 @@ Reports and captures go to the git-ignored `.mlforge-build/`.
 
 ## Contributing changes
 
-- Start with [AGENTS.md](../AGENTS.md) (project rules), [How MLForge works](HOW_IT_WORKS.md) and [Extending MLForge](EXTENDING_MLFORGE.md).
+- Start with the [project rules](EXTENDING_MLFORGE.md#project-rules), [How MLForge works](HOW_IT_WORKS.md) and [Extending MLForge](EXTENDING_MLFORGE.md).
 - The specifications in [docs/v1](v1/README.md) are the source of truth for behavior; update the owning document when a contract changes.
 - Keep widgets presentation-only, keep fitting and process management out of the UI, and add tests for every non-trivial behavior.
 - Run the checks above; run `python scripts/verify_release.py` when packaging, prediction or export behavior changes.
