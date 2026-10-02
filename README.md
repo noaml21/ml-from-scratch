@@ -99,4 +99,4 @@ This project grew out of [ML from scratch](docs/ml-from-scratch.md): NumPy imple
 
 ## License
 
-No license has been chosen yet, so default copyright applies: all rights are reserved.
+MIT. See [LICENSE](LICENSE).
