@@ -61,7 +61,7 @@ Reports and captures go to the git-ignored `.mlforge-build/`.
 
 ## Continuous integration
 
-[`.github/workflows/verify.yml`](../.github/workflows/verify.yml) runs on pull requests to `v1/mlforge` and on manual dispatch, on Ubuntu 24.04 with Python 3.12 and 3.13. Each job installs the constrained dev environment, runs `pip check`, the full test suite, Ruff, build, Twine, the three educational comparisons, the release verifier and the planning-document check, and uploads the verifier evidence. The dispatch input `consumer_installs=false` skips the consumer installations for quicker runs.
+[`.github/workflows/verify.yml`](../.github/workflows/verify.yml) runs on pushes and pull requests to `main` and on manual dispatch, on Ubuntu 24.04 with Python 3.12 and 3.13. Each job installs the constrained dev environment, runs `pip check`, the full test suite, Ruff, build, Twine, the three educational comparisons, the release verifier and the planning-document check, and uploads the verifier evidence. The dispatch input `consumer_installs=false` skips the consumer installations for quicker runs.
 
 ## Contributing changes
 

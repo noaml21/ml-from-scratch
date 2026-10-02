@@ -2,7 +2,7 @@
 
 **A local-first terminal application that takes a tabular dataset from raw file to an evaluated model and an installable Python package that predicts without MLForge.**
 
-[![Verify MLForge](https://github.com/noaml21/ml-from-scratch/actions/workflows/verify.yml/badge.svg?branch=v1/mlforge)](https://github.com/noaml21/ml-from-scratch/actions/workflows/verify.yml)
+[![Verify MLForge](https://github.com/noaml21/mlforge/actions/workflows/verify.yml/badge.svg?branch=main)](https://github.com/noaml21/mlforge/actions/workflows/verify.yml)
 ![Python 3.12 | 3.13](https://img.shields.io/badge/python-3.12%20%7C%203.13-3776AB)
 ![Linux x86_64](https://img.shields.io/badge/platform-Linux%20x86__64-555)
 
@@ -24,11 +24,11 @@ MLForge makes the decisions in a small machine-learning project visible and safe
 
 ## Quick start
 
-MLForge supports CPython 3.12 and 3.13 on Linux x86_64 and is verified on Ubuntu 24.04. It is not published on PyPI; install it from this branch:
+MLForge supports CPython 3.12 and 3.13 on Linux x86_64 and is verified on Ubuntu 24.04. It is not published on PyPI; install it from source:
 
 ```bash
-git clone --branch v1/mlforge https://github.com/noaml21/ml-from-scratch.git
-cd ml-from-scratch
+git clone https://github.com/noaml21/mlforge.git
+cd mlforge
 python3.12 -m venv .venv
 source .venv/bin/activate
 python -m pip install -c requirements/constraints-runtime.txt .
@@ -99,4 +99,4 @@ This project grew out of [ML from scratch](docs/ml-from-scratch.md): NumPy imple
 
 ## License
 
-No license has been chosen yet, so default copyright applies: all rights are reserved.
+MIT. See [LICENSE](LICENSE).

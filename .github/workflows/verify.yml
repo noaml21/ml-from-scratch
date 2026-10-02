@@ -1,7 +1,9 @@
 name: Verify MLForge
 on:
+  push:
+    branches: [main]
   pull_request:
-    branches: [v1/mlforge]
+    branches: [main]
   workflow_dispatch:
     inputs:
       consumer_installs:

@@ -36,7 +36,7 @@ Intentional omissions (PRODUCT_SPEC non-goals): no browser, accounts, telemetry,
 | Check | Result |
 |---|---|
 | `OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python -m pytest -q` (local, 3.12.3) | **707 passed in 2061.12s**, exit 0; includes six-model consumer installs; no skips, no xfails, no deselections |
-| CI [36269528709](https://github.com/noaml21/ml-from-scratch/actions/runs/36269528709), consumer installs on | **success**: 3.12 707 passed/1749.31s; 3.13 707 passed/1642.70s; each also pip check, Ruff, format, build, twine, three comparisons, `verify_release.py`, planning validation |
+| CI [36269528709](https://github.com/noaml21/mlforge/actions/runs/36269528709), consumer installs on | **success**: 3.12 707 passed/1749.31s; 3.13 707 passed/1642.70s; each also pip check, Ruff, format, build, twine, three comparisons, `verify_release.py`, planning validation |
 | `python -m ruff check .` / `python -m ruff format --check .` | passed (121 files) |
 | `python -m build` (isolated, offline from the wheelhouse), `python -m twine check dist/*`, `python -m pip check` | passed |
 | `python demos/{kmeans,logistic_regression,pca}_comparison.py` | passed (educational track preserved; original 15 tests pass in the suite) |
@@ -45,7 +45,7 @@ Intentional omissions (PRODUCT_SPEC non-goals): no browser, accounts, telemetry,
 | `python scripts/rehearse_recovery.py` | passed (.mlforge-build/recovery-p09.json) |
 | `python docs/v1/verify_planning.py`, `git diff --check`, `git status --short` | passed; only the user's external untracked `CLAUDE.md` remains |
 
-Earlier phase gates: P07 CI [36262489129](https://github.com/noaml21/ml-from-scratch/actions/runs/36262489129), P08 CI [36266241401](https://github.com/noaml21/ml-from-scratch/actions/runs/36266241401), both successful on both Pythons.
+Earlier phase gates: P07 CI [36262489129](https://github.com/noaml21/mlforge/actions/runs/36262489129), P08 CI [36266241401](https://github.com/noaml21/mlforge/actions/runs/36266241401), both successful on both Pythons.
 
 ## Clean installation and entrypoint proof
 `scripts/verify_package.py` (inside `verify_release.py`) builds the application wheel and sdist, creates fresh virtual environments outside the checkout, installs with index access disabled from the prepared wheelhouse, asserts the package is loaded from the venv, runs `mlforge --version` (0.1.0) and `mlforge --help`, parses all five packaged examples and runs `pip check`. A uniquely named `.pth` audit hook, inherited by every worker, denies network access; a control connection is refused in every environment and the logs show zero attempts. Session temporary directories are empty after quit.
