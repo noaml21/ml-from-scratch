@@ -42,7 +42,6 @@ Intentional omissions (PRODUCT_SPEC non-goals): no browser, accounts, telemetry,
 | `python demos/{kmeans,logistic_regression,pca}_comparison.py` | passed (educational track preserved; original 15 tests pass in the suite) |
 | `python scripts/verify_release.py` (local, clean tree) | **exit 0** at aa7f971 (code identical to a2092c0), worktree clean: application wheel/sdist installs and installed journeys 655.8 s, six model consumer installations 104.9 s; release-3.12.json |
 | `python scripts/measure_peak_input.py` | **passed**: 20,000 × 100 CSV (12,956,658 bytes) load 25.42 s, training both classification models 65.31 s, 1,000-record prediction 3.13 s, export 6.02 s (25,975-byte wheel), peak child RSS 779.5 MiB; performance-3.12.json |
-| `python scripts/rehearse_recovery.py` | passed (.mlforge-build/recovery-p09.json) |
 | `python docs/v1/verify_planning.py`, `git diff --check`, `git status --short` | passed; no uncommitted changes to tracked files |
 
 Earlier phase gates: P07 CI [36262489129](https://github.com/noaml21/mlforge/actions/runs/36262489129), P08 CI [36266241401](https://github.com/noaml21/mlforge/actions/runs/36266241401), both successful on both Pythons.
