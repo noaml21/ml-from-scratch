@@ -72,7 +72,7 @@ Below either 80 columns or 24 rows: replace normal content with a compact dimens
 Transitions are immediate state changes with no artificial delay, flashing full-screen effects or typewriter text. Show loading only for actual work. Back/help/error/resize preserve valid input and focus under UX_FLOW. Async completion updates status without stealing focus; stale events never redraw a newer experiment (ARCHITECTURE revision rules). No raw child output flashes onto the terminal. Normal quit/handled failure restores the terminal.
 
 ## Required screen review checklist
-Apply during P06, P07 and P08, then repeat across the full flow in P09. Record per-screen evidence and defects in that phase's BUILD_LOG entry; do not mark a screen polished just because widgets render.
+Apply to every new or changed screen, then repeat across the full flow before a release. Record per-screen evidence and defects with the change; do not mark a screen polished just because widgets render.
 1. A first-time user sees one clear title/question and the next action without opening help.
 2. Normal content fits the documented terminal sizes; scrollable content and all actions remain reachable, without clipped labels or hidden warnings.
 3. Focus, selection, disabled reason and busy state are distinguishable without color; inspect a monochrome capture as well as the normal palette.

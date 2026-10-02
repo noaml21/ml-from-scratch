@@ -53,7 +53,6 @@ The suite contains 707 tests for the V1 release candidate. Real-process and UI t
 | `scripts/verify_package.py` | Builds the wheel and sdist, installs both into fresh environments outside the checkout with indexes disabled, then drives the installed app: dataset, training, Try and Export journeys through Textual Pilot and real terminals, with a network guard in every process. Each exported wheel is installed into its own consumer environment and must match the in-app prediction. |
 | `scripts/verify_release.py` | The release command: runs `verify_package.py` and the six-model consumer installations and writes a JSON report with commands, exit codes and versions. |
 | `scripts/measure_peak_input.py` | Loads, trains, predicts and exports at the documented input limits and records time and memory. |
-| `scripts/rehearse_recovery.py` | Rehearses the development resume protocol on a disposable clone. |
 | `scripts/capture_screenshots.py` | Regenerates the documentation screenshots in `docs/assets/` from the real application. |
 | `scripts/generate_examples.py` | Regenerates the packaged synthetic example datasets (a test checks they are reproducible). |
 
@@ -65,7 +64,7 @@ Reports and captures go to the git-ignored `.mlforge-build/`.
 
 ## Contributing changes
 
-- Start with [AGENTS.md](../AGENTS.md) (project rules), [How MLForge works](HOW_IT_WORKS.md) and [Extending MLForge](EXTENDING_MLFORGE.md).
+- Start with the [project rules](EXTENDING_MLFORGE.md#project-rules), [How MLForge works](HOW_IT_WORKS.md) and [Extending MLForge](EXTENDING_MLFORGE.md).
 - The specifications in [docs/v1](v1/README.md) are the source of truth for behavior; update the owning document when a contract changes.
 - Keep widgets presentation-only, keep fitting and process management out of the UI, and add tests for every non-trivial behavior.
 - Run the checks above; run `python scripts/verify_release.py` when packaging, prediction or export behavior changes.

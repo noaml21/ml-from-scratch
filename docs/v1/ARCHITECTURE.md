@@ -117,7 +117,7 @@ Setuptools build for app and generated wheels, standard build frontend with --no
 Before large UI work, prove all six standard pipelines round-trip with skops and the dependency set. This is a gated technical spike with tests, not a second exporter.
 
 ## P01 implementation notes
-The dated notes below record each slice as it landed. Items they describe as pending were completed by later slices; the sections above and BUILD_LOG are current.
+The dated notes below record each slice as it landed. Items they describe as pending were completed by later slices; the sections above are current.
 
 Package discovery now includes only `mlforge*`; the bootstrap handles help/version without presentation imports. The no-argument workflow now lazily composes the P06 Textual shell with one application Service; the full journey remains in progress. Runtime constraints resolve NumPy 2.5.3, SciPy 1.18.1, sklearn 1.9.1, skops 0.15.0 and Textual 8.2.8, with full transitive pins in requirements/constraints-runtime.txt. Development/demo pins are separate in constraints-dev.txt. The P01 package verifier builds wheel/sdist, installs in isolated environments and checks entrypoints outside the source import path with pip indexes disabled; model-export and TUI verification are later gates.
 

@@ -1,10 +1,10 @@
 # V1 release acceptance
 
-Every row is mandatory. Status initially NOT VERIFIED; implementation must replace that status with evidence links/commands/results in BUILD_LOG and the final report. Existing planning or code alone is not proof. No V1-critical TODO, skip/xfail, severe known UX break or undocumented workaround may remain.
+Every row was mandatory for the V1 release; [V1_BUILD_REPORT](V1_BUILD_REPORT.md) records the evidence. Existing planning or code alone is not proof. No V1-critical TODO, skip/xfail, severe known UX break or undocumented workaround may remain.
 
 | ID | Objective pass condition | Required evidence |
 |---|---|---|
-| A01 | Dedicated v1/mlforge branch descends from complete planning branch; main untouched; logical verified commits | git branch/log/diff, BUILD_LOG per phase |
+| A01 | Dedicated v1/mlforge branch descends from complete planning branch; main untouched; logical verified commits | git branch/log/diff per phase |
 | A02 | All 15 original tests and three educational comparison scripts work; original NumPy APIs and assets preserved | pytest/comparison outputs, scoped diff |
 | A03 | Clean wheel and sdist-derived install, pip check, --help/--version and mlforge TUI launch work on Python 3.12/3.13 Ubuntu baseline | two CI jobs + isolated verifier logs |
 | A04 | Runtime/examples/import/train/export have no attempted network use or browser; source dataset bytes unchanged | child-aware network guard + content hash tests |
@@ -28,9 +28,9 @@ Every row is mandatory. Status initially NOT VERIFIED; implementation must repla
 | A22 | Entire flow keyboard usable at 100x30 and 80x24; resize/help restore focus, below-minimum allows cancel/quit; text keys never trigger navigation | Pilot full flows and visual/PTY evidence |
 | A23 | Errors, empty/busy/partial-success states all have clear next actions; back edits invalidate stale state; export retry retains accepted bundle | state transition tests and UX review record |
 | A24 | Complete suite including dependency/cycle/headless-import architecture checks, lint, build, metadata, comparisons, isolated release verifier pass; no critical skips or weakened tests | exact TEST_PLAN command results + CI URLs |
-| A25 | README commands/environment/scope true; docs canonical and consistent; HOW_IT_WORKS and EXTENDING_MLFORGE match actual code/ownership; BUILD_STATE current and resumable; BUILD_LOG historical; V1_BUILD_REPORT has evidence, limitations and verified SHA | doc link/coverage review + final scoped diff |
+| A25 | README commands/environment/scope true; docs canonical and consistent; HOW_IT_WORKS and EXTENDING_MLFORGE match actual code/ownership; V1_BUILD_REPORT has evidence, limitations and verified SHA | doc link/coverage review + final scoped diff |
 | A26 | Final report identifies review hotspots and separates tested implementation SHA from evidence-only commit; worktree clean except declared ignored test artifacts | final git status/log and report |
-| A27 | Interruption recovery reconstructs the next small unit from BUILD_STATE + Git + historical evidence, preserves partial local edits, treats unknown checks as unverified and does not restart completed work | P01/P09 recovery rehearsal evidence per RESUME_PROTOCOL |
+| A27 | Retired after release: a development-process check on recovering interrupted build work, which passed during the V1 build | — |
 | A28 | Every implemented screen passes DESIGN_SYSTEM screen-review checklist; visual/focus/state consistency, actual text contrast and clear next actions demonstrated | per-phase checklist + actual color/monochrome captures at supported sizes |
 
 Release is not complete if a supported environment is unverified, network restrictions prevent clean install checks, or real process cancellation/security cases are skipped. Report blocked with completed work preserved; do not silently redefine the release target.
