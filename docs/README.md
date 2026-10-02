@@ -15,4 +15,4 @@ MLForge V1 was built against written specifications with gated phases. These doc
 - [Specification index](v1/README.md): the entry point to all V1 documents.
 - Product and behavior: [Product scope](v1/PRODUCT_SPEC.md), [Architecture](v1/ARCHITECTURE.md), [Datasets](v1/DATASET_SPEC.md), [ML pipeline](v1/ML_PIPELINE.md), [Export and Predictor API](v1/EXPORT_SPEC.md), [UX flow](v1/UX_FLOW.md), [Design system](v1/DESIGN_SYSTEM.md).
 - Verification: [Test plan](v1/TEST_PLAN.md), [Acceptance criteria](v1/ACCEPTANCE_CRITERIA.md), [V1 build report](v1/V1_BUILD_REPORT.md).
-- Build process: [Implementation plan](v1/IMPLEMENTATION_PLAN.md), [Build log](v1/BUILD_LOG.md), [Build state](v1/BUILD_STATE.md), [Resume protocol](v1/RESUME_PROTOCOL.md).
+- Delivery: [Implementation plan](v1/IMPLEMENTATION_PLAN.md) (the phases V1 was built in) and [Repository audit](v1/REPOSITORY_AUDIT.md) (the baseline it started from).

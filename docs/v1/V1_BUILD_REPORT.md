@@ -43,7 +43,7 @@ Intentional omissions (PRODUCT_SPEC non-goals): no browser, accounts, telemetry,
 | `python scripts/verify_release.py` (local, clean tree) | **exit 0** at aa7f971 (code identical to a2092c0), worktree clean: application wheel/sdist installs and installed journeys 655.8 s, six model consumer installations 104.9 s; release-3.12.json |
 | `python scripts/measure_peak_input.py` | **passed**: 20,000 × 100 CSV (12,956,658 bytes) load 25.42 s, training both classification models 65.31 s, 1,000-record prediction 3.13 s, export 6.02 s (25,975-byte wheel), peak child RSS 779.5 MiB; performance-3.12.json |
 | `python scripts/rehearse_recovery.py` | passed (.mlforge-build/recovery-p09.json) |
-| `python docs/v1/verify_planning.py`, `git diff --check`, `git status --short` | passed; only the user's external untracked `CLAUDE.md` remains |
+| `python docs/v1/verify_planning.py`, `git diff --check`, `git status --short` | passed; no uncommitted changes to tracked files |
 
 Earlier phase gates: P07 CI [36262489129](https://github.com/noaml21/mlforge/actions/runs/36262489129), P08 CI [36266241401](https://github.com/noaml21/mlforge/actions/runs/36266241401), both successful on both Pythons.
 
@@ -58,7 +58,7 @@ Earlier phase gates: P07 CI [36262489129](https://github.com/noaml21/mlforge/act
 Pilot suites run the complete flow keyboard-only at 80x24 and 100x30, including help/focus restoration, literal `q`/`b`/`?` in fields, below-minimum guard with cancel/quit, repeated 100x30 → 80x24 → 79x23 → 100x30 transitions (now including Try and a running export), real-child training cancellation and partial results, field-level Try errors and export collisions/permission failures with retry. Real PTYs of the installed application cover the dataset journey (explicit OSC52 Copy, Ctrl+Q/Ctrl+C) and classification (`q`) and PCA (Ctrl+C) through Help, resize, re-entry, inspection, quit confirmation and alternate-screen restoration. The PTY verifier judges modal and resize transitions on the currently visible terminal cells. Color and monochrome SVG captures are kept under `.mlforge-build/` (p07-*, p08-try, p08-export, installed-*) and in CI artifacts. Evidence limit: no human-operated physical terminal session was recorded; visual review used the actual Textual SVG captures and automated PTY transcripts.
 
 ## Documentation and acceptance status
-README, HOW_IT_WORKS, EXTENDING_MLFORGE, AGENTS and ARCHITECTURE describe the implemented modules; BUILD_STATE is the current pointer and BUILD_LOG the history. Acceptance: A01–A24, A27 and A28 have passing evidence mapped in BUILD_LOG (P09 acceptance matrix); A25 is satisfied by the P10 documentation review and A26 by this report and the non-self-referential SHA protocol. No V1-critical TODO, skip, xfail or known blocker remains.
+README, HOW_IT_WORKS, EXTENDING_MLFORGE and ARCHITECTURE describe the implemented modules. Acceptance: A01–A24, A27 and A28 have passing evidence mapped in the P09 acceptance matrix of the phase-by-phase [build log](https://github.com/noaml21/mlforge/blob/d316e85f0e31f28fdcf82afd4bbfc5a9e3f7892b/docs/v1/BUILD_LOG.md), which is kept in Git history rather than in the tree; A25 is satisfied by the P10 documentation review and A26 by this report and the non-self-referential SHA protocol. No V1-critical TODO, skip, xfail or known blocker remains.
 
 ## Known limitations
 - Supported only on Linux x86_64 with CPython 3.12/3.13; exported wheels require the exporting Python minor version and exact pinned dependencies.
